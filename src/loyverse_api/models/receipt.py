@@ -1,19 +1,13 @@
 from uuid import UUID
 from datetime import datetime
 from pydantic import Field, field_validator
-from loyverse_api.api.endpoints import LoyverseEndpoints
-from loyverse_api.models.user import Customer
 from loyverse_api.models.base import Base
 
 
 class PaymentType(Base):
     name: str
-    type: str = Field(default="CASH")
-    stores: list[UUID] = []
-
-    @field_validator("stores", mode="before")
-    def serialize_store_ids(cls, values: list[str]) -> str:
-        return ",".join(values)
+    type: str
+    stores: list[UUID]
 
 
 class Discount(Base):
@@ -65,10 +59,3 @@ class Receipt(Base):
     @field_validator("payment_type_id", mode="before")
     def extract_payment_type_id(cls, value) -> UUID:
         return UUID(value[0]["payment_type_id"])
-
-    def customer(self) -> Customer:
-        data = LoyverseEndpoints.CUSTOMERS.fetch_by_id(self.customer_id)
-        return Customer.model_validate(data)
-
-    def employee(self) -> None:
-        raise NotImplementedError
