@@ -94,7 +94,7 @@ class PaginationMixin(Generic[T]):
 
     async def list_paginated(
         self,
-        limit: int = 50,
+        limit: int = 250,
         cursor: str | None = None,
     ) -> dict:
         params = {"limit": limit}
@@ -103,11 +103,11 @@ class PaginationMixin(Generic[T]):
 
         return await self._get(self.path, params=params)
 
-    async def iter_all(self) -> AsyncGenerator[T, None]:
+    async def iter_all(self, limit: int = 250) -> AsyncGenerator[T, None]:
         """Async generator to iterate over all items across all pages"""
         cursor = None
         while True:
-            resp = await self.list_paginated(cursor=cursor)
+            resp = await self.list_paginated(cursor=cursor, limit=limit)
             records = resp.get(self.path)
             for item in records:
                 yield item
