@@ -1,6 +1,6 @@
 # Loyverse API
 
-A python library for interacting with the Loyverse API.
+Asynchronous Python SDK for interacting with the Loyverse API
 
 ## Installation
 
@@ -31,78 +31,119 @@ os.environ["LOYVERSE_API_KEY"] = "your_api_key"
 
 ## Usage
 
-**Specifying Endpoints**
+**Creating a client**
 
-An interface to each endpoints specified in the official [Loyverse API reference](https://developer.loyverse.com/docs/#section/Pagination)
-is provided by the `LoyverseEndpoints` class under the `endpoints` submodule.
-
+Create an instance of the `LoyverseClient` to send asynchronous requests to the Loyverse RESTFUL API.
 ```python
-from loyverse_api.api.endpoints import LoyverseEndpoints
+from loyverse_api import LoyverseClient
 
-customers_endpoint = LoyverseEndpoints.CUSTOMERS
-receipts_endpoint = LoyverseEndpoints.RECEIPTS
-employees_endpoint = LoyverseEndpoints.EMPLOYEES
+client = LoyverseClient(api_token=YOUR_API_TOKEN)
+
+# *Perform some operations*
+
+# Close client
+await client.close()
 ```
 
-As of the most recent version, the endponts marked with a check are supported:
+**Loading API token as an environment variable**
 
-- [x] `/customers`
-- [x] `/discounts`
-- [x] `/employees`
-- [x] `/inventory`
-- [x] `/items`
-- [x] `/payment_types`
-- [x] `/pos_devices`
-- [x] `/receipts`
-- [x] `/stores`
-- [ ] `/categories`
-- [ ] `/shifts`
-- [ ] `/suppliers`
-- [ ] `/taxes`
-- [ ] `/webhooks`
-- [ ] `/variants`
-
-**Query Parameters**
-
-Set the query parameters thru the `.params` attribute. For example, we can override the limit of retrieving 50 records per request to 250 as follows:
-
-```python
-receipts_endpoint.params['limit'] = 250
-
-# A more pythonic way
-receipts_endpoint.set_limit(250)
-```
-
-Alternatively, globally set the value using the `LOYVERSE_LIMIT` enviroment variable:
+Specify your Loyverse API token in a `.env` file at the project root.
 ```.env
-LOYVERSE_LIMIT=250
+LOYVERSE_API_TOKEN=your_api_token
 ```
 
-**Retrieving Data**
-
-`Endpoint` objects have the `fetch_all` method to retrieve all records:
+This will be loaded by a `config` object which can be used to create the client.
 ```python
-receipts_endpoint.fetch_all()
+from loyverse_api.core.config import config
 
-# Enable debug mode
-receipts_endpoint.fetch_all(debug=True)
+client = LoyverseClient(api_token=config.LOYVERSE_API_TOKEN)
 ```
 
-Convenience methods are also provided for retrieving **filtered** records:
+**Retrieving data**
+
+Individual endpoints can be accessed as an attribute of the `LoyverseClient` instance.
+Naming conventions are consistent with the paths specified in the [official Loyverse API reference](https://developer.loyverse.com/docs/#tag/Suppliers).
+
 ```python
-from datetime import datetime
+# Fetch customer records
+customers = await client.customers.list()
 
-# Get the 10 most recent transactions
-receipts.fetch_most_recent(10)
+# Fetch receipt records
+receipts = await client.receipts.list()
 
-# Get transactions created AFTER a specified date
-start = datetime(2025, 1, 1)
-receipts_endpoint.fetch_after_dt(dt=start)
+# Fetch employee records
+employees = await client.employees.list()
+```
 
-# Get transactions created BEFORE a specified date
-end = datetime(2025, 1, 1)
-receipts_endpoint.fetch_before_dt(dt=end)
+**CRUD operations**
 
-# Get transactions created between two dates
-receipts_endpoint.fetch_between_dt(start=start, end=end)
+Create an item category:
+```python
+payload = dict(name="Soaps and Detergent", color="BLUE")
+new_category = await client.categories.create(payload)
+
+# Returns a pydantic model
+print(new_category)
+```
+
+```
+Category(
+    id=UUID('3618d104-cf16-4b65-adce-84f03f71517b'),
+    name='Soaps and Detergents',
+    color=<CategoryColor.BLUE: 'BLUE'>,
+    created_at=datetime.datetime(2025, 11, 29, 23, 35, 26, tzinfo=TzInfo(0)),
+    deleted_at=None
+)
+```
+
+Retrieve the newly created category:
+```python
+category = await client.categories.retrieve(new_category.id)
+```
+
+Update an item category:
+```python
+payload = dict(color="PURPLE")
+updated = await client.categories.update(id=new_category.id, payload=payload)
+
+# Returns the updated model
+print(updated)
+```
+
+```md
+Category(
+    id=UUID('a706109e-d589-4a9e-8a71-2b71419fff60'),
+    name='Services',
+    color=<CategoryColor.PURPLE: 'PURPLE'>,
+    created_at=datetime.datetime(2025, 12, 2, 7, 25, 25, 400000, tzinfo=TzInfo(0)),
+    deleted_at=None
+)
+```
+
+Delete an item catgory:
+```python
+deleted = await client.categories.delete(id=updated.id)
+print(deleted)
+```
+
+```
+{'deleted_object_ids': ['a706109e-d589-4a9e-8a71-2b71419fff60']}
+```
+
+**Fetching all records**
+
+The `PaginationMixin` implements cursor-based pagination for retrieving all records from an endpoint.
+
+```python
+# Retrieve all customers
+
+async for customer in client.customers.iter_all():
+  print(f"{customer.name} first visited on {customer.created_at}")
+```
+
+```
+John Doe first visited on 2025-09-12 05:40:09+08:00
+Micheal Scott first visited on 2025-09-12 05:27:01+08:00
+Bart Simpson first visited on 2025-09-12 05:13:48+08:00
+Rick Grimes first visited on 2025-09-12 05:09:33+08:00
 ```
