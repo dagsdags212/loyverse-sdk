@@ -1,12 +1,13 @@
+from typing import Self
 from uuid import UUID
-from pydantic import Field, field_validator
-from loyverse_api.models.base import Base
+from pydantic import Field, model_validator
+from loyverse_api.models.common import Base, Pagination
 
 
 class Item(Base):
-    handle: str
-    reference_id: UUID | None = None
     name: str = Field(alias="item_name")
+    handle: str | None = None
+    reference_id: UUID | None = None
     description: str | None = None
     track_stock: bool = False
     sold_by_weight: bool = False
@@ -25,7 +26,13 @@ class Item(Base):
     option3_name: str | None = Field(default=None, exclude=True)
     variants: list[dict] | None = None
 
-    @field_validator("handle", mode="before")
-    def titlecase_handle(cls, value: str) -> str:
-        """Convert item handle to titlecase"""
-        return value.title()
+    @model_validator(mode="after")
+    def set_default_handle(self) -> Self:
+        """Sets handle to the value of the item name if not provided"""
+        if self.handle is None:
+            self.handle = self.name
+        return self
+
+
+class ItemListResponse(Pagination):
+    items: list[Item] = Field(alias="items")

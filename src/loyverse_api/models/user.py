@@ -2,7 +2,7 @@ import re
 from uuid import UUID
 from datetime import datetime, timedelta
 from pydantic import Field, field_validator
-from loyverse_api.models.base import Base
+from loyverse_api.models.common import Base, Pagination
 
 
 class User(Base):
@@ -23,12 +23,15 @@ class User(Base):
 
 
 class Employee(User):
-    stores: str
+    stores: list[UUID]
     is_owner: bool = False
 
-    @field_validator("stores", mode="before")
-    def serialize_store_ids(cls, values) -> str:
-        return ",".join(values)
+    def serialize_store_ids(self) -> str:
+        return ",".join([str(id) for id in self.stores])
+
+
+class EmployeeListResponse(Pagination):
+    items: list[Employee] = Field(alias="employees")
 
 
 class Customer(User):
@@ -52,3 +55,7 @@ class Customer(User):
     def tenure(self) -> timedelta | None:
         if self.first_visit and self.last_visit:
             return self.last_visit - self.first_visit
+
+
+class CustomerListResponse(Pagination):
+    items: list[Customer] = Field(alias="customers")

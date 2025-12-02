@@ -1,26 +1,22 @@
 from uuid import UUID
 from datetime import datetime
 from pydantic import Field, field_validator
-from loyverse_api.models.base import Base
+from pydantic import NonNegativeFloat
+from loyverse_api.models.common import Base, Pagination
 
 
 class PaymentType(Base):
     name: str
-    type: str
+    type: str = "CASH"
     stores: list[UUID]
 
+    @field_validator("type", mode="before")
+    def uppercase_type(cls, value: str) -> str:
+        return value.upper()
 
-class Discount(Base):
-    name: str
-    type: str | None = None
-    discount_amount: float = 0.0
-    discount_percent: float | None = Field(default=0.0, ge=0.0, le=100.0)
-    stores: list[UUID] = []
-    restricted_access: bool = False
 
-    @field_validator("stores", mode="before")
-    def serialize_store_ids(cls, values: list[str]) -> str:
-        return ",".join(values)
+class PaymentTypeListReponse(Pagination):
+    items: list[PaymentType] = Field(alias="payment_types")
 
 
 class Receipt(Base):
@@ -30,15 +26,15 @@ class Receipt(Base):
     refund_for: str | None = None
     order: str | None = None
     source: str | None = None
-    total_amount: float = Field(alias="total_money")
-    total_tax: float = 0.0
+    total_amount: NonNegativeFloat = Field(alias="total_money", ge=0.0)
+    total_tax: NonNegativeFloat = 0.0
     line_items: str
-    points_earned: float = 0.0
-    points_deducted: float = 0.0
-    points_balance: float
-    total_discount: float = 0.0
-    surchage: float = 0.0
-    tip: float = 0.0
+    points_earned: NonNegativeFloat = 0.0
+    points_deducted: NonNegativeFloat = 0.0
+    points_balance: NonNegativeFloat
+    total_discount: NonNegativeFloat = 0.0
+    surchage: NonNegativeFloat = 0.0
+    tip: NonNegativeFloat = 0.0
     customer_id: UUID | None = None
     employee_id: UUID
     store_id: UUID
@@ -47,7 +43,7 @@ class Receipt(Base):
     cancelled_at: datetime | None = None
 
     @field_validator("line_items", mode="before")
-    def concat_items(cls, values) -> str:
+    def serialize_items(cls, values) -> str:
         orders = []
         for item in values:
             orders.append(
@@ -58,4 +54,10 @@ class Receipt(Base):
 
     @field_validator("payment_type_id", mode="before")
     def extract_payment_type_id(cls, value) -> UUID:
-        return UUID(value[0]["payment_type_id"])
+        if isinstance(value, list):
+            return UUID(value[0]["payment_type_id"])
+        return value
+
+
+class ReceiptListResponse(Pagination):
+    items: list[Receipt] = Field(alias="receipts")

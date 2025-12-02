@@ -7,11 +7,15 @@ from loyverse_api.core.config import config
 
 class Base(BaseModel):
     id: UUID = Field(default_factory=uuid4)
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
     deleted_at: datetime | None = Field(default=None, exclude=True)
 
     @field_validator("created_at", "updated_at", "deleted_at", mode="after")
     def update_timezone(cls, value: datetime | None) -> datetime:
         if value:
-            return value.replace(tzinfo=ZoneInfo(config.timezone))
+            return value.replace(tzinfo=ZoneInfo(config.TIMEZONE))
+
+
+class Pagination(BaseModel):
+    next_cursor: str | None = Field(default=None, alias="cursor")

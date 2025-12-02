@@ -1,6 +1,5 @@
-from uuid import UUID
 from pydantic import Field, field_validator
-from loyverse_api.models.base import Base
+from loyverse_api.models.common import Base, Pagination
 
 
 class Store(Base):
@@ -17,3 +16,7 @@ class Store(Base):
         if len(value) != 2:
             raise ValueError("country must be a two-letter code")
         return value
+
+
+class StoreListResponse(Pagination):
+    items: list[Store] = Field(alias="stores")
