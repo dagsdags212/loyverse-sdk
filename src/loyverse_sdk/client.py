@@ -5,6 +5,7 @@ from loyverse_sdk.exceptions import APIError
 from loyverse_sdk.endpoints import (
     CustomersEndpoint,
     DiscountsEndpoint,
+    ItemsEndpoint,
     EmployeesEndpoint,
     PosDevicesEndpoints,
     ReceiptsEndpoint,
@@ -34,6 +35,7 @@ class LoyverseClient:
         self.discounts = DiscountsEndpoint(self)
         self.devices = PosDevicesEndpoints(self)
         self.employees = EmployeesEndpoint(self)
+        self.items = ItemsEndpoint(self)
         self.receipts = ReceiptsEndpoint(self)
         self.stores = StoresEndpoint(self)
 
