@@ -1,27 +1,8 @@
-from typing import Type, TypeVar, Any, Callable
+from typing import TypeVar
 from pydantic import BaseModel
 
 
 T = TypeVar("T", bound=BaseModel)
-
-
-def returns_model(model: Type[T]):
-    """Decorator to parse response into a pydantic model."""
-
-    def _decorator(fn: Callable[..., Any]):
-        async def _inner(*args, **kwargs):
-            data = await fn(*args, **kwargs)
-            if isinstance(data, model):
-                return data
-            return (
-                model.model_validate(data)
-                if hasattr(model, "model_validate")
-                else model(**data)
-            )
-
-        return _inner
-
-    return _decorator
 
 
 class BaseEndpoint:

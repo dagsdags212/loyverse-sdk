@@ -129,11 +129,14 @@ class PaginationMixin(Generic[T]):
         """Async generator to iterate over all items across all pages"""
         cursor = None
         while True:
-            resp = await self.list_paginated(cursor=cursor, limit=limit,
-                                             created_at_min=created_at_min,
-                                             created_at_max=created_at_max,
-                                             updated_at_min=updated_at_min,
-                                             updated_at_max=updated_at_max)
+            resp = await self.list_paginated(
+                cursor=cursor,
+                limit=limit,
+                created_at_min=created_at_min,
+                created_at_max=created_at_max,
+                updated_at_min=updated_at_min,
+                updated_at_max=updated_at_max,
+            )
             records = resp.get(self.path)
             for item in records:
                 yield item

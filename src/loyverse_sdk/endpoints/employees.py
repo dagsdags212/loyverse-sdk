@@ -1,4 +1,5 @@
 from loyverse_sdk.endpoints.base import BaseEndpoint
+from loyverse_sdk.core.config import config
 from loyverse_sdk.endpoints.mixins import (
     ListMixin,
     RetrieveMixin,
@@ -7,10 +8,10 @@ from loyverse_sdk.endpoints.mixins import (
 from loyverse_sdk.models import Employee, EmployeeListResponse
 
 
-class EmployeesEndpoint(BaseEndpoint, ListMixin, RetrieveMixin, PaginationMixin):
+class EmployeesEndpoint(BaseEndpoint, RetrieveMixin, ListMixin, PaginationMixin):
     path = "employees"
 
-    async def list(self, limit: int = 100, cursor: str | None = None):
+    async def list(self, limit: int = config.PAGE_LIMIT, cursor: str | None = None):
         return await super().list(
             limit=limit, cursor=cursor, model=EmployeeListResponse
         )
