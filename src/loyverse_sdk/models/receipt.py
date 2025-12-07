@@ -22,7 +22,7 @@ class PaymentTypeListReponse(Pagination):
 class Receipt(Base):
     id: str = Field(alias="receipt_number")
     note: str | None = Field(default=None, exclude=True)
-    receipt_type: str = Field(default="SALE")
+    receipt_type: str
     refund_for: str | None = None
     order: str | None = None
     source: str | None = None
