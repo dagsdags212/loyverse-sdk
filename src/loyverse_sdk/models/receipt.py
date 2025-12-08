@@ -33,7 +33,7 @@ class Receipt(Base):
     points_deducted: NonNegativeFloat = 0.0
     points_balance: NonNegativeFloat
     total_discount: NonNegativeFloat = 0.0
-    surchage: NonNegativeFloat = 0.0
+    surcharge: NonNegativeFloat = 0.0
     tip: NonNegativeFloat = 0.0
     customer_id: UUID | None = None
     employee_id: UUID
