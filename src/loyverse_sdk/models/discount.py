@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Self
 from uuid import UUID
-from pydantic import Field, model_validator
+from pydantic import Field, model_validator, field_serializer
 from loyverse_sdk.models.common import Base, Pagination
 
 
@@ -40,6 +40,10 @@ class Discount(Base):
         if self.type != DiscountType.FIXED_PERCENT:
             self.discount_percent = None
         return self
+
+    @field_serializer("stores", mode="plain")
+    def serialize_store_uuids(self, value: list[UUID]) -> list[str]:
+        return [str(id) for id in value]
 
     def list_valid_discount_types(self) -> list:
         """Returns a list of valid discount types"""
