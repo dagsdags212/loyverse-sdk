@@ -1,5 +1,5 @@
 from uuid import UUID
-from pydantic import Field, NonNegativeFloat, field_serializer
+from pydantic import Field, NonNegativeFloat
 from loyverse_sdk.models.common import Base, Pagination
 
 
@@ -17,12 +17,6 @@ class Variant(Base):
     default_pricing_type: str = "VARIABLE"
     default_price: NonNegativeFloat | None = None
     stores: list
-
-    @field_serializer("id", mode="plain")
-    def serialize_uuids(self, value: UUID) -> str:
-        if isinstance(value, UUID):
-            return str(value)
-        return value
 
 
 class VariantListResponse(Pagination):
