@@ -1,7 +1,6 @@
 from uuid import uuid4, UUID
 from datetime import datetime
-from zoneinfo import ZoneInfo
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
 import pytz
 from loyverse_sdk.core.config import config
 
@@ -19,6 +18,12 @@ class Base(BaseModel):
             local_tz = pytz.timezone(_tz)
             local_dt = value.replace(tzinfo=pytz.utc).astimezone(local_tz)
             return local_dt
+
+    @field_serializer("id", mode="plain")
+    def serialize_uuid(self, value: UUID) -> str:
+        if isinstance(value, UUID):
+            return str(value)
+        return value
 
 
 class Pagination(BaseModel):
