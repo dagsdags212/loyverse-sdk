@@ -1,7 +1,7 @@
 from uuid import UUID, uuid4
 from datetime import datetime
 from enum import Enum, unique
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
 from loyverse_sdk.models.common import Pagination
 
 
@@ -25,6 +25,12 @@ class BaseCategory(BaseModel):
     def uppercase_color(cls, color: str) -> str:
         """Capitalize the color attribute"""
         return color.upper()
+
+    @field_serializer("id", mode="plain")
+    def serialize_uuids(self, value: UUID) -> str:
+        if isinstance(value, UUID):
+            return str(value)
+        return value
 
 
 class Category(BaseCategory):

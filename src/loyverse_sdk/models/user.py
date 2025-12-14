@@ -1,7 +1,7 @@
 import re
 from uuid import UUID
 from datetime import datetime, timedelta
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, field_serializer
 from loyverse_sdk.models.common import Base, Pagination
 
 
@@ -23,13 +23,12 @@ class User(Base):
 
 
 class Employee(User):
-    stores: list[UUID] | str
+    stores: list[UUID]
     is_owner: bool = False
 
-    @field_validator("stores", mode="before")
-    def serialize_store_ids(cls, value) -> str:
-        """Concatenate store ids into a single string"""
-        return ",".join([str(id) for id in value])
+    @field_serializer("stores", mode="plain")
+    def serialize_store_uuids(self, value: UUID) -> str:
+        return [str(id) for id in value]
 
 
 class EmployeeListResponse(Pagination):
@@ -38,18 +37,18 @@ class EmployeeListResponse(Pagination):
 
 class Customer(User):
     address: str | None = None
-    city: str | None = Field(default=None, exclude=True)
-    region: str | None = Field(default=None, exclude=True)
-    postal_code: str | None = Field(default=None, exclude=True)
-    country_code: str | None = Field(default=None, exclude=True)
-    note: str | None = Field(default=None, exclude=True)
-    customer_code: str | None = Field(default=None, exclude=True)
-    first_visit: datetime | None = Field(default=None, exclude=True)
-    last_visit: datetime | None = Field(default=None, exclude=True)
-    total_visits: int = Field(default=1, exclude=True)
-    total_spent: float = Field(default=0.0, exclude=True)
-    total_points: float = Field(default=0.0, exclude=True)
-    permanent_deletion_at: datetime | None = Field(default=None, exclude=True)
+    city: str | None = None
+    region: str | None = None
+    postal_code: str | None = None
+    country_code: str | None = None
+    note: str | None = None
+    customer_code: str | None = None
+    first_visit: datetime | None = None
+    last_visit: datetime | None = None
+    total_visits: int = Field(default=1)
+    total_spent: float = Field(default=0.0)
+    total_points: float = Field(default=0.0)
+    permanent_deletion_at: datetime | None = None
 
     def __repr__(self) -> str:
         return f"Customer(name={self.name},email={self.email},phone_number={self.phone_number})"
