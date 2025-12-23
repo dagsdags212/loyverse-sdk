@@ -20,8 +20,18 @@ class ReceiptsEndpoint(BaseEndpoint, CrudMixin, ListMixin, PaginationMixin):
     async def update(self, id: str, payload: dict):
         return await super().update(id=id, payload=payload, model=Receipt)
 
-    async def list(self, limit: int = config.PAGE_LIMIT, cursor: str | None = None):
-        return await super().list(limit=limit, cursor=cursor, model=ReceiptListResponse)
+    async def list(
+        self, *,
+        limit: int = config.PAGE_LIMIT,
+        cursor: str | None = None,
+        **kwargs,
+    ):
+        return await super().list(
+            limit=limit,
+            cursor=cursor,
+            model=ReceiptListResponse,
+            **kwargs
+        )
 
     async def iter_all(self, **kwargs):
         async for item in super().iter_all(**kwargs):
