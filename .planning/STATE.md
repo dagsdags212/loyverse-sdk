@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 1 context gathered
-last_updated: "2026-05-25T11:42:57.904Z"
+last_updated: "2026-05-25T11:49:10.832Z"
 last_activity: 2026-05-25
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 50
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-25)
 ## Current Position
 
 Phase: 01 (code-cleanup-bugfixes) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-25
 
-Progress: [███████░░░] 67%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [███████░░░] 67%
 
 *Updated after each plan completion*
 | Phase 01-code-cleanup-bugfixes P02 | 2min | 2 tasks | 2 files |
+| Phase 01-code-cleanup-bugfixes P03 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,11 @@ Progress: [███████░░░] 67%
 
 - [Phase ?]: Preserved RetrieveMixin on MerchantEndpoint for interface consistency despite no longer calling super().retrieve()
 - [Phase ?]: Used direct _get(self.path) + model_validate pattern for singleton resource, mirroring ListMixin.list() approach
+- [Phase ?]: ExportError catch pattern used for pipeline catch-and-wrap in exporter.py (D-01)
+- [Phase ?]: duckdb.Error used for non-critical DuckDB operations (D-02)
+- [Phase ?]: pl.exceptions.PolarsError with duckdb.Error fallback — two-tier insertion strategy (D-04)
+- [Phase ?]: raise Exception → raise ExportError consistent with pipeline exception hierarchy (D-05)
+- [Phase ?]: json.JSONDecodeError replaces bare Exception — critical errors now propagate (D-06, D-07)
 
 ### Pending Todos
 
@@ -81,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-25T11:40:14.028Z
+Last session: 2026-05-25T11:49:10.824Z
 Stopped at: Phase 1 context gathered
 Resume file: None

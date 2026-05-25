@@ -24,8 +24,8 @@
 
 ### Code Quality
 
-- [ ] **QLT-01**: Replace 11+ bare `except Exception:` blocks in `db/exporter.py` with specific exception handling
-- [ ] **QLT-02**: Replace 2 bare `except Exception:` blocks in `client.py` with specific exception handling
+- [x] **QLT-01**: Replace 11+ bare `except Exception:` blocks in `db/exporter.py` with specific exception handling
+- [x] **QLT-02**: Replace 2 bare `except Exception:` blocks in `client.py` with specific exception handling
 
 ### Verification
 
@@ -58,8 +58,8 @@ None — this is a single cleanup phase.
 | CLN-02 | Phase 1 | Pending |
 | CLN-03 | Phase 1 | Pending |
 | CLN-04 | Phase 1 | Pending |
-| QLT-01 | Phase 1 | Pending |
-| QLT-02 | Phase 1 | Pending |
+| QLT-01 | Phase 1 | Complete |
+| QLT-02 | Phase 1 | Complete |
 | VER-01 | Phase 2 | Pending |
 
 **Coverage:**

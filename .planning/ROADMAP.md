@@ -6,7 +6,7 @@ Fix all identified bugs, remove dead code, tighten exception handling, and get t
 
 ## Phases
 
-- [ ] **Phase 1: Code Cleanup & Bugfixes** - Fix code-level bugs, remove orphaned/dead code, and replace bare exception blocks with specific handling
+- [x] **Phase 1: Code Cleanup & Bugfixes** - Fix code-level bugs, remove orphaned/dead code, and replace bare exception blocks with specific handling (completed 2026-05-25)
 - [ ] **Phase 2: Test Fixes & Verification** - Fix test imports, correct test field names, and verify all tests pass
 
 ## Phase Details
@@ -26,7 +26,7 @@ Fix all identified bugs, remove dead code, tighten exception handling, and get t
 Plans:
 - [x] 01-01-PLAN.md — Remove orphaned files (shift.py, schemas.py, logging.py) and dead utils.py functions
 - [x] 01-02-PLAN.md — Fix Tax model duplicate name field and MerchantEndpoint singleton retrieve
-- [ ] 01-03-PLAN.md — Replace 13 bare `except Exception:` blocks with specific exception types
+- [x] 01-03-PLAN.md — Replace 13 bare `except Exception:` blocks with specific exception types
 
 ### Phase 2: Test Fixes & Verification
 **Goal**: All existing tests import correctly and pass against the cleaned-up codebase
@@ -45,5 +45,5 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Code Cleanup & Bugfixes | 2/3 | In Progress|  |
+| 1. Code Cleanup & Bugfixes | 3/3 | Complete   | 2026-05-25 |
 | 2. Test Fixes & Verification | 0/TBD | Not started | - |
