@@ -1,30 +1,17 @@
-from uuid import UUID, uuid4
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, field_serializer
-from loyverse_sdk.models.common import Pagination
 
 
 class Inventory(BaseModel):
-    """Inventory item stock levels across warehouses"""
+    """Inventory item stock levels per variant per store"""
 
-    id: UUID = Field(default_factory=uuid4)
-    item_id: UUID
-    warehouse_id: UUID
-    available: int = 0
-    committed: int = 0
-    damaged: int = 0
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
-    deleted_at: datetime | None = None
+    variant_id: str
+    store_id: str
+    in_stock: int = 0
+    updated_at: datetime
 
-    @field_serializer("id", "item_id", "warehouse_id", mode="plain")
-    def serialize_uuid(self, value: UUID) -> str:
-        if isinstance(value, UUID):
-            return str(value)
-        return value
-
-    @field_validator("created_at", "updated_at", "deleted_at", mode="after")
-    def utc_to_local(cls, value: datetime | None) -> datetime | None:
+    @field_validator("updated_at", mode="after")
+    def utc_to_local(cls, value: datetime) -> datetime:
         if value:
             import pytz
             from loyverse_sdk.core.config import config
@@ -35,6 +22,10 @@ class Inventory(BaseModel):
             return local_dt
         return value
 
+    @field_serializer("variant_id", "store_id", mode="plain")
+    def serialize_str(self, value: str) -> str:
+        return value
 
-class InventoryListResponse(Pagination):
-    items: list[Inventory] = Field(alias="inventory")
+
+class InventoryListResponse(BaseModel):
+    inventory: list[Inventory]
