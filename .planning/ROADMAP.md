@@ -37,7 +37,10 @@ Plans:
   2. Receipt model test uses the correct `surcharge` field name (not the typo `surchage`)
   3. `pytest` run across all tests exits with zero failures and zero errors
   4. Verification output exists showing the full test run completed successfully
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 02-01-PLAN.md — Fix test imports (8 files) and surcharge typo, verify pytest passes
 
 ## Progress
 
@@ -46,4 +49,4 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Code Cleanup & Bugfixes | 4/4 | Complete   | 2026-05-25 |
-| 2. Test Fixes & Verification | 0/TBD | Not started | - |
+| 2. Test Fixes & Verification | 0/1 | Ready to execute | - |
