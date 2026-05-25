@@ -14,6 +14,16 @@
 
 </details>
 
+### Phase 3: Cover missing Loyverse API endpoints (inventory)
+
+**Goal:** Audit all 16 Loyverse API endpoints, implement missing data models and endpoint classes, identify supported CRUD operations, and register new endpoints to the main client.
+**Requirements**: COMPLETE-SDK
+**Depends on:** Phase 2
+**Plans**: 1 plan
+
+Plans:
+- [ ] 03-01-PLAN.md — Audit all endpoints, implement missing inventory + shifts, register in client, update DuckDB schema
+
 ---
 
 *For full milestone details, see `.planning/milestones/v1.0-ROADMAP.md`*
