@@ -148,17 +148,17 @@ class DuckDBExporter:
                     progress_callback=progress_callback,
                 )
                 export_counts[resource_name] = count
-            except Exception as e:
+            except ExportError as e:
                 raise ExportError(
                     f"Failed to export {resource_name}: {e}",
-                    resource_name=resource_name
+                    resource_name=resource_name,
                 )
 
         # Create indexes if requested
         if create_indexes_after:
             try:
                 create_indexes(self.db_path)
-            except Exception as e:
+            except duckdb.Error as e:
                 # Don't fail export if index creation fails
                 print(f"Warning: Failed to create indexes: {e}")
 
@@ -202,21 +202,20 @@ class DuckDBExporter:
         # Get endpoint for this resource
         if resource_name not in self.client.endpoints:
             raise ExportError(
-                f"Unknown resource: {resource_name}",
-                resource_name=resource_name
+                f"Unknown resource: {resource_name}", resource_name=resource_name
             )
 
         endpoint = self.client.endpoints[resource_name]
 
         # Check if endpoint supports pagination
-        if not hasattr(endpoint, 'iter_all'):
+        if not hasattr(endpoint, "iter_all"):
             # Merchant endpoint doesn't support pagination (single record)
             if resource_name == "merchant":
                 return await self._export_merchant()
             else:
                 raise ExportError(
                     f"Resource {resource_name} does not support pagination",
-                    resource_name=resource_name
+                    resource_name=resource_name,
                 )
 
         # Stream records and batch insert
@@ -263,18 +262,14 @@ class DuckDBExporter:
             merchant_dict = pydantic_to_sql_dict(merchant)
 
             with self.connection.transaction() as conn:
-                self._insert_records_to_table(
-                    conn, "merchant", [merchant_dict]
-                )
+                self._insert_records_to_table(conn, "merchant", [merchant_dict])
 
             return 1
-        except Exception as e:
+        except ExportError as e:
             raise ExportError(f"Failed to export merchant: {e}", "merchant")
 
     def _batch_insert(
-        self,
-        resource_name: str,
-        batch: list[tuple[dict, dict, dict]]
+        self, resource_name: str, batch: list[tuple[dict, dict, dict]]
     ) -> None:
         """
         Insert a batch of records with transaction management.
@@ -294,9 +289,7 @@ class DuckDBExporter:
                 # Insert main table records
                 main_records = [item[0] for item in batch]
                 if main_records:
-                    self._insert_records_to_table(
-                        conn, resource_name, main_records
-                    )
+                    self._insert_records_to_table(conn, resource_name, main_records)
 
                 # Insert junction table records
                 all_junction_records = {}
@@ -322,17 +315,14 @@ class DuckDBExporter:
                     if records:
                         self._insert_records_to_table(conn, table_name, records)
 
-        except Exception as e:
+        except ExportError as e:
             raise ExportError(
                 f"Failed to insert batch for {resource_name}: {e}",
-                resource_name=resource_name
+                resource_name=resource_name,
             )
 
     def _insert_records_to_table(
-        self,
-        conn: duckdb.DuckDBPyConnection,
-        table_name: str,
-        records: list[dict]
+        self, conn: duckdb.DuckDBPyConnection, table_name: str, records: list[dict]
     ) -> None:
         """
         Insert records into a table using Polars + DuckDB for performance.
@@ -368,7 +358,7 @@ class DuckDBExporter:
             # Unregister temporary DataFrame
             conn.unregister("temp_df")
 
-        except Exception as e:
+        except pl.exceptions.PolarsError as e:
             # Try alternative approach if Polars fails
             try:
                 # Fallback: Use DuckDB's direct insert
@@ -384,10 +374,10 @@ class DuckDBExporter:
                     # Execute batch insert
                     conn.executemany(
                         f"INSERT OR REPLACE INTO {table_name} ({columns_str}) VALUES ({placeholders})",
-                        values
+                        values,
                     )
-            except Exception as fallback_error:
-                raise Exception(
+            except duckdb.Error as fallback_error:
+                raise ExportError(
                     f"Failed to insert into {table_name}: {e}. "
                     f"Fallback also failed: {fallback_error}"
                 )
@@ -416,13 +406,16 @@ class DuckDBExporter:
                 current_time = datetime.now()
 
                 for resource_name, count in export_counts.items():
-                    conn.execute("""
+                    conn.execute(
+                        """
                         INSERT OR REPLACE INTO sync_metadata
                         (resource_name, last_sync_at, records_count, sync_type)
                         VALUES (?, ?, ?, ?)
-                    """, (resource_name, current_time, count, "full"))
+                    """,
+                        (resource_name, current_time, count, "full"),
+                    )
 
-        except Exception as e:
+        except duckdb.Error as e:
             # Don't fail export if metadata update fails
             print(f"Warning: Failed to update sync metadata: {e}")
 
@@ -457,7 +450,7 @@ class DuckDBExporter:
 
             return metadata
 
-        except Exception:
+        except duckdb.Error:
             return {}
 
     def get_table_counts(self) -> dict[str, int]:
@@ -477,16 +470,14 @@ class DuckDBExporter:
 
             for resource in self.RESOURCE_ORDER:
                 try:
-                    result = conn.execute(
-                        f"SELECT COUNT(*) FROM {resource}"
-                    ).fetchone()
+                    result = conn.execute(f"SELECT COUNT(*) FROM {resource}").fetchone()
                     counts[resource] = result[0] if result else 0
-                except Exception:
+                except duckdb.Error:
                     counts[resource] = 0
 
             return counts
 
-        except Exception:
+        except duckdb.Error:
             return {}
 
     def close(self) -> None:
@@ -504,10 +495,7 @@ class DuckDBExporter:
 
 
 def quick_export(
-    client,
-    db_path: str,
-    resources: Optional[list[str]] = None,
-    **kwargs
+    client, db_path: str, resources: Optional[list[str]] = None, **kwargs
 ) -> dict[str, int]:
     """
     Convenience function for quick exports.
