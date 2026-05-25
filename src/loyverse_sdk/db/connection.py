@@ -9,6 +9,8 @@ from contextlib import contextmanager
 from typing import Generator, Optional
 import duckdb
 
+from loyverse_sdk.exceptions import ExportError
+
 
 class DuckDBConnection:
     """
@@ -115,7 +117,7 @@ class DuckDBConnection:
             conn.begin()
             yield conn
             conn.commit()
-        except Exception:
+        except (duckdb.Error, ExportError):
             conn.rollback()
             raise
 

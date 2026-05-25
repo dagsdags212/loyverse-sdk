@@ -148,7 +148,9 @@ class DuckDBExporter:
                     progress_callback=progress_callback,
                 )
                 export_counts[resource_name] = count
-            except ExportError as e:
+            except (ExportError, duckdb.Error) as e:
+                if not isinstance(e, ExportError):
+                    e = ExportError(str(e), resource_name=resource_name)
                 raise ExportError(
                     f"Failed to export {resource_name}: {e}",
                     resource_name=resource_name,
@@ -265,8 +267,10 @@ class DuckDBExporter:
                 self._insert_records_to_table(conn, "merchant", [merchant_dict])
 
             return 1
-        except ExportError as e:
-            raise ExportError(f"Failed to export merchant: {e}", "merchant")
+        except Exception as e:
+            if not isinstance(e, ExportError):
+                raise ExportError(f"Failed to export merchant: {e}", "merchant") from e
+            raise
 
     def _batch_insert(
         self, resource_name: str, batch: list[tuple[dict, dict, dict]]
@@ -315,7 +319,9 @@ class DuckDBExporter:
                     if records:
                         self._insert_records_to_table(conn, table_name, records)
 
-        except ExportError as e:
+        except (ExportError, duckdb.Error) as e:
+            if not isinstance(e, ExportError):
+                raise ExportError(str(e), resource_name=resource_name) from e
             raise ExportError(
                 f"Failed to insert batch for {resource_name}: {e}",
                 resource_name=resource_name,
