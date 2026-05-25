@@ -21,7 +21,12 @@ Fix all identified bugs, remove dead code, tighten exception handling, and get t
   3. No orphaned files remain in the source tree: `models/shift.py` is gone, `utils.py` has no dead functions (`convert_response`, `use_model`), `db/schemas.py` and `core/logging.py` are removed
   4. All 11+ bare `except Exception:` blocks in `db/exporter.py` and 2 bare `except Exception:` blocks in `client.py` are replaced with specific exception types
   5. The codebase imports cleanly with no `ModuleNotFoundError` or `AttributeError` from removed code
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Remove orphaned files (shift.py, schemas.py, logging.py) and dead utils.py functions
+- [ ] 01-02-PLAN.md — Fix Tax model duplicate name field and MerchantEndpoint singleton retrieve
+- [ ] 01-03-PLAN.md — Replace 13 bare `except Exception:` blocks with specific exception types
 
 ### Phase 2: Test Fixes & Verification
 **Goal**: All existing tests import correctly and pass against the cleaned-up codebase
@@ -40,5 +45,5 @@ Fix all identified bugs, remove dead code, tighten exception handling, and get t
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Code Cleanup & Bugfixes | 0/TBD | Not started | - |
+| 1. Code Cleanup & Bugfixes | 0/3 | Planned | - |
 | 2. Test Fixes & Verification | 0/TBD | Not started | - |
