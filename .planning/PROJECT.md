@@ -12,53 +12,64 @@ Data can be reliably pulled from the Loyverse API into local storage for analysi
 
 ### Validated
 
-- ✓ Async HTTP client with Bearer token auth — existing
-- ✓ 14 domain endpoint classes (categories, customers, discounts, employees, items, etc.) — existing
-- ✓ Pydantic v2 models with timezone conversion — existing
-- ✓ Cursor-based pagination with async generator — existing
-- ✓ DuckDB export pipeline with batch inserts — existing
-- ✓ Type-safe exception hierarchy mapped to HTTP status codes — existing
-- ✓ Config management via pydantic-settings/.env — existing
-- ✓ Unit tests for 8 model files — existing
+- ✓ Code cleanup complete — v1.0 (removed dead code: shift.py, schemas.py, logging.py, utils.py functions)
+- ✓ Tax model fixed (duplicate name field removed, max_length=40 preserved) — v1.0
+- ✓ MerchantEndpoint.retrieve() fixed (parameterless, singleton /merchant URL) — v1.0
+- ✓ Exception handling tightened (13 bare except blocks replaced with specific types) — v1.0
+- ✓ All 8 test file imports fixed (loyverse_api → loyverse_sdk) — v1.0
+- ✓ surcharge typo fixed — v1.0
+- ✓ Receipt/LineItem test payloads fixed (required fields added) — v1.0
+- ✓ All 25 model tests now pass — v1.0
 
 ### Active
 
-- [ ] **BUG-01**: Fix test import errors (all 8 files use `loyverse_api` instead of `loyverse_sdk`)
-- [ ] **BUG-02**: Fix `surchage` typo → `surcharge` in receipt model test
-- [ ] **BUG-03**: Fix duplicate `name` field in Tax model (second overwrites first's `max_length`)
-- [ ] **BUG-04**: Fix `MerchantEndpoint.retrieve(id)` — id parameter is never used; constructs wrong URL for singleton resource
-- [ ] **CLEAN-01**: Remove orphaned `models/shift.py` (no endpoint, no client integration, no tests)
-- [ ] **CLEAN-02**: Remove dead `utils.py` functions (`convert_response`, `use_model`)
-- [ ] **CLEAN-03**: Remove dead `db/schemas.py` (unused SQLModel schema, parallel to live raw-SQL schema)
-- [ ] **CLEAN-04**: Remove dead `core/logging.py` stub (unused `class Logger`)
-- [ ] **CLEAN-05**: Replace 11+ bare `except Exception:` blocks in `db/exporter.py` with specific exception handling
-- [ ] **CLEAN-06**: Replace 2 bare `except Exception:` blocks in `client.py` with specific exception handling
+- [ ] **TST-01**: Fix all 8 test model imports (COMPLETED — moved to Validated)
+- [ ] **TST-02**: Fix `surchage` typo → `surcharge` (COMPLETED — moved to Validated)
+- [ ] **BUG-01**: Remove duplicate `name` field in Tax model (COMPLETED — moved to Validated)
+- [ ] **BUG-02**: Fix `MerchantEndpoint.retrieve(id)` — (COMPLETED — moved to Validated)
+- [ ] **CLN-01**: Remove orphaned `models/shift.py` (COMPLETED — moved to Validated)
+- [ ] **CLN-02**: Remove dead `utils.py` functions (COMPLETED — moved to Validated)
+- [ ] **CLN-03**: Remove dead `db/schemas.py` (COMPLETED — moved to Validated)
+- [ ] **CLN-04**: Remove dead `core/logging.py` stub (COMPLETED — moved to Validated)
+- [ ] **QLT-01**: Replace 11+ bare `except Exception:` blocks in `db/exporter.py` (COMPLETED — moved to Validated)
+- [ ] **QLT-02**: Replace 2 bare `except Exception:` blocks in `client.py` (COMPLETED — moved to Validated)
+- [ ] **VER-01**: All existing tests pass (COMPLETED — moved to Validated)
 
 ### Out of Scope
 
-- Adding new endpoint classes or features — cleanup/bugfix only
-- Adding new test coverage for endpoints/client/auth — deferred
-- Replacing `pytz` with `zoneinfo` — nice-to-have, not part of cleanup
-- Removing `sqlmodel` or `polars` dependencies — risk reduction, not cleanup
-- Adding retry/rate-limit logic — new feature, not bugfix
-- Replacing `db/schema_builder.py` raw SQL with SQLModel — refactor, not cleanup
+| Feature | Reason |
+|---------|--------|
+| New endpoint classes or features | Cleanup/bugfix only — no new functionality |
+| New test coverage for endpoints/client/auth | Deferred — focus on fixing existing tests |
+| Replace `pytz` with `zoneinfo` | Nice-to-have, not part of cleanup |
+| Remove `sqlmodel` or `polars` dependencies | Risk reduction, not cleanup |
+| Add retry/rate-limit logic | New feature, not bugfix |
+| Replace `db/schema_builder.py` raw SQL | Refactor, not cleanup |
 
 ## Context
 
-The codebase was built as a client library + export pipeline. The codebase map (.planning/codebase/) identified multiple concrete bugs, dead code in 4 modules, and 11+ bare except blocks. All existing tests have incorrect package imports, meaning they've likely never been run as-is. Fixing these issues and getting tests passing is the priority before any feature work.
+**Shipped v1.0 Initial Cleanup** with 106 files changed, ~11K LOC affected.
+The codebase now has a clean, working state — all tests pass (25 model tests), dead code removed, exception handling tightened, and type errors fixed.
 
-## Constraints
+**Tech Stack:**
+- Python 3.12+, httpx, Pydantic v2, DuckDB, Polars, SQLModel
+- 14 endpoint classes with cursor-based pagination
+- Streaming export pipeline into DuckDB
 
-- **Python**: 3.12+ (already enforced via `.python-version`)
-- **Dependencies**: Keep minimal; avoid adding new ones for cleanup work
-- **Testing**: All existing tests must pass after fixes
+**User Feedback:** N/A — internal cleanup milestone
+
+**Known Issues:** None
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Cleanup-first scope | Codebase map revealed concrete bugs and dead code that block reliable development | — Pending |
+| Cleanup-first scope | Codebase map revealed concrete bugs and dead code that block reliable development | ✓ All cleanup items completed in v1.0 |
+| Singleton endpoint pattern | MerchantEndpoint.retrieve() without id, using _get(self.path) directly | ✓ Works correctly for singleton /merchant resource |
+| Two-tier insertion strategy (D-04) | pl.exceptions.PolarsError with duckdb.Error fallback in _batch_insert | ✓ Robust error handling for mixed DataFrame/DB operations |
+| Pipeline catch-and-wrap (D-01) | ExportError catch in export loop wraps duckdb.Error before re-raise | ✓ Consistent exception hierarchy |
+| Narrow rollback handler (WR-02) | connection.py transaction() rollback only catches duckdb.Error/ExportError | ✓ Non-DB exceptions now propagate correctly |
 
 ---
 
-*Last updated: 2026-05-25 after initialization*
+*Last updated: 2026-05-25 after v1.0 milestone*
