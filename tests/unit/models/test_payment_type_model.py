@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from loyverse_api.models import PaymentType
+from loyverse_sdk.models import PaymentType
 
 
 class TestPaymentTypeModel:
@@ -17,7 +17,7 @@ class TestPaymentTypeModel:
             stores=[uuid4()],
             created_at=datetime.now(),
             updated_at=datetime.now(),
-            deleted_at=None
+            deleted_at=None,
         )
         return payload
 

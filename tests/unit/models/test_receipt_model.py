@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from loyverse_api.models import Receipt
+from loyverse_sdk.models import Receipt
 
 
 class TestReceiptModel:
@@ -20,8 +20,7 @@ class TestReceiptModel:
             total_money=300,
             total_tax=30,
             line_items=[
-                dict(item_name=f"item{i}", quantity=i, price=i*100)
-                for i in range(3)
+                dict(item_name=f"item{i}", quantity=i, price=i * 100) for i in range(3)
             ],
             points_earned=10,
             points_deducted=0,
@@ -116,8 +115,7 @@ class TestReceiptModel:
         payload = dict(
             receipt_number="8-1234",
             line_items=[
-                dict(item_name=f"item{i}", quantity=i, price=i*100)
-                for i in range(3)
+                dict(item_name=f"item{i}", quantity=i, price=i * 100) for i in range(3)
             ],
             total_money=200,
             points_balance=100,
@@ -137,6 +135,6 @@ class TestReceiptModel:
         assert r.points_earned == 0
         assert r.points_deducted == 0
         assert r.total_discount == 0
-        assert r.surchage == 0
+        assert r.surcharge == 0
         assert r.tip == 0
         assert r.cancelled_at is None

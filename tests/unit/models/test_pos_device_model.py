@@ -2,7 +2,7 @@ from uuid import uuid4, UUID
 import pytest
 from pydantic import ValidationError
 
-from loyverse_api.models import PosDevice
+from loyverse_sdk.models import PosDevice
 
 
 class TestPosDeviceModel:
@@ -10,11 +10,7 @@ class TestPosDeviceModel:
 
     def generate_valid_payload(self):
         payload = dict(
-            id=uuid4(),
-            name="Cash",
-            store_id=uuid4(),
-            activated=True,
-            deleted_at=None
+            id=uuid4(), name="Cash", store_id=uuid4(), activated=True, deleted_at=None
         )
         return payload
 

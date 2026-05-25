@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from pydantic import ValidationError
 import pytest
 
-from loyverse_api.models import Employee
+from loyverse_sdk.models import Employee
 
 
 class TestEmployeeModel:

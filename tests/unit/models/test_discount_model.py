@@ -4,8 +4,8 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from loyverse_api.models.discount import DiscountType
-from loyverse_api.models import Discount
+from loyverse_sdk.models.discount import DiscountType
+from loyverse_sdk.models import Discount
 
 
 class TestDiscountModel:
@@ -22,7 +22,7 @@ class TestDiscountModel:
             restricted_access=random.choice([True, False]),
             created_at=datetime.now(),
             updated_at=datetime.now(),
-            deleted_at=None
+            deleted_at=None,
         )
         return payload
 
@@ -73,9 +73,7 @@ class TestDiscountModel:
 
     def test_fixed_amount_discount_without_value(self):
         payload = dict(
-            name="Fixed amount",
-            type=DiscountType.FIXED_AMOUNT,
-            stores=[uuid4()]
+            name="Fixed amount", type=DiscountType.FIXED_AMOUNT, stores=[uuid4()]
         )
 
         with pytest.raises(ValueError):
@@ -83,9 +81,7 @@ class TestDiscountModel:
 
     def test_fixed_percent_discount_without_value(self):
         payload = dict(
-            name="Fixed percent",
-            type=DiscountType.FIXED_PERCENT,
-            stores=[uuid4()]
+            name="Fixed percent", type=DiscountType.FIXED_PERCENT, stores=[uuid4()]
         )
 
         with pytest.raises(ValueError):

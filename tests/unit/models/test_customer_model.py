@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 from pydantic import ValidationError
 import pytest
 
-from loyverse_api.models import Customer
+from loyverse_sdk.models import Customer
 
 
 class TestCustomerModel:

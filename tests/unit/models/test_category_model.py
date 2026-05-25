@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 import pytest
 from pydantic import ValidationError
 
-from loyverse_api.models import Category
+from loyverse_sdk.models import Category
 
 
 class TestCategoryModel:
