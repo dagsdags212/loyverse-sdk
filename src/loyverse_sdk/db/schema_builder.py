@@ -292,7 +292,13 @@ class InventoryDB(SQLModel, table=True):
 
 
 class ShiftDB(SQLModel, table=True):
-    """Employee shifts/work periods"""
+    """Employee shifts/work periods
+
+    Note: Monetary fields (opening_amount, closing_amount, etc.) use float/DOUBLE
+    instead of Decimal due to DuckDB's lack of native Decimal support. This can
+    cause precision loss for large monetary values. Consumers should round to
+    appropriate decimal places when displaying shift totals.
+    """
 
     __tablename__ = "shifts"
 
