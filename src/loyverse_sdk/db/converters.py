@@ -568,6 +568,7 @@ def get_resource_required_fields(resource_name: str) -> list[str]:
         "modifiers": ["id", "name", "position", "created_at", "updated_at"],
         "discounts": ["id", "type", "name", "created_at", "updated_at"],
         "employees": ["id", "name", "created_at", "updated_at"],
+        "inventory": ["variant_id", "store_id", "in_stock", "updated_at"],
         "customers": ["id", "name", "created_at", "updated_at"],
         "pos_devices": ["id", "name", "store_id"],
         "payment_types": ["id", "name", "type", "created_at", "updated_at"],

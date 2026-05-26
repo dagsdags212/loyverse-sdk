@@ -56,6 +56,8 @@ class DuckDBExporter:
         "items",
         # Depends on items
         "variants",
+        # Depends on variants + stores (variant_id FK, store_id FK)
+        "inventory",
         # Depends on many (customer, employee, store, device, payment_type)
         "receipts",
         # Merchant (single record)
