@@ -14,18 +14,11 @@ class TestInventoryEndpoint:
 
     def test_no_retrieve_method(self):
         """Inventory endpoint should NOT expose retrieve() — no GET /inventory/{id}."""
-        # Create a mock client to instantiate the endpoint
         client = MagicMock()
         client.request = AsyncMock()
         endpoint = InventoryEndpoint(client)
 
-        # Verify retrieve() is not directly callable (it's inherited but should be overridden)
-        with pytest.raises(TypeError):
-            # Attempting to call retrieve via super() would hit the API path
-            # Since we removed RetrieveMixin, this should fail differently
-            pass
-
-        # Better test: RetrieveMixin should not be in MRO
+        # Verify RetrieveMixin is not in the class MRO
         assert RetrieveMixin not in type(endpoint).__mro__, (
             "RetrieveMixin should not be in InventoryEndpoint MRO"
         )
