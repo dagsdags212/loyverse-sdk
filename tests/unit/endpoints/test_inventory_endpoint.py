@@ -53,31 +53,14 @@ class TestInventoryEndpointStructure:
 
 
 class TestInventoryEndpointListSignature:
-    """Test the list() method signature includes filter parameters."""
+    """Test the list() method signature uses a query model."""
 
-    def test_list_has_store_id_param(self):
-        """list() should accept an optional store_id parameter."""
+    def test_list_accepts_query_param(self):
+        """list() should accept an optional query parameter."""
         sig = inspect.signature(InventoryEndpoint.list)
-        assert "store_id" in sig.parameters
-        param = sig.parameters["store_id"]
-        assert param.default is None, "store_id should default to None"
-
-    def test_list_has_variant_ids_param(self):
-        """list() should accept an optional variant_ids parameter."""
-        sig = inspect.signature(InventoryEndpoint.list)
-        assert "variant_ids" in sig.parameters
-        param = sig.parameters["variant_ids"]
-        assert param.default is None, "variant_ids should default to None"
-
-    def test_list_has_limit_param(self):
-        """list() should accept limit parameter."""
-        sig = inspect.signature(InventoryEndpoint.list)
-        assert "limit" in sig.parameters
-
-    def test_list_has_cursor_param(self):
-        """list() should accept cursor parameter."""
-        sig = inspect.signature(InventoryEndpoint.list)
-        assert "cursor" in sig.parameters
+        assert "query" in sig.parameters
+        param = sig.parameters["query"]
+        assert param.default is None, "query should default to None"
 
 
 class TestInventoryEndpointHasIterAll:
@@ -96,11 +79,13 @@ class TestInventoryEndpointHasIterAll:
 
 
 class TestInventoryEndpointFilterForwarding:
-    """Test filter parameter forwarding behavior."""
+    """Test filter parameter forwarding via query model."""
 
     @pytest.mark.asyncio
     async def test_list_forwards_store_id_filter(self):
-        """list(store_id=...) should pass store_id as query param to API."""
+        """list(store_ids=...) should pass store_ids as query param to API."""
+        from loyverse_sdk.models import InventoryListQuery
+
         client = MagicMock()
         client.request = AsyncMock(
             return_value={
@@ -110,16 +95,19 @@ class TestInventoryEndpointFilterForwarding:
         )
         endpoint = InventoryEndpoint(client)
 
-        await endpoint.list(store_id="store-abc")
+        query = InventoryListQuery(store_ids="store-abc")
+        await endpoint.list(query)
 
         call_args = client.request.call_args
         assert call_args[0][0] == "GET"
         assert call_args[0][1] == "inventory"
-        assert "store_id" in str(call_args[1].get("params", {}))
+        assert "store_ids" in str(call_args[1].get("params", {}))
 
     @pytest.mark.asyncio
     async def test_list_forwards_variant_ids_filter(self):
         """list(variant_ids=...) should pass variant_ids as query param to API."""
+        from loyverse_sdk.models import InventoryListQuery
+
         client = MagicMock()
         client.request = AsyncMock(
             return_value={
@@ -129,7 +117,8 @@ class TestInventoryEndpointFilterForwarding:
         )
         endpoint = InventoryEndpoint(client)
 
-        await endpoint.list(variant_ids="var-1,var-2")
+        query = InventoryListQuery(variant_ids="var-1,var-2")
+        await endpoint.list(query)
 
         call_args = client.request.call_args
         assert call_args[0][0] == "GET"
@@ -138,7 +127,7 @@ class TestInventoryEndpointFilterForwarding:
 
     @pytest.mark.asyncio
     async def test_list_no_filters_works(self):
-        """list() without filters should still work."""
+        """list() without query should default to InventoryListQuery()."""
         client = MagicMock()
         client.request = AsyncMock(
             return_value={
