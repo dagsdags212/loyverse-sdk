@@ -2,7 +2,7 @@ from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, field_serializer
 from pydantic import NonNegativeFloat, NonNegativeInt
-from loyverse_sdk.models.common import Base, Pagination
+from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
 
 
 class PaymentType(Base):
@@ -19,9 +19,20 @@ class PaymentTypeListReponse(Pagination):
     items: list[PaymentType] = Field(alias="payment_types")
 
 
-class LineItem(BaseModel):
-    """A single line item purchased by a client"""
+class PaymentTypeListQuery(BaseListQuery):
+    payment_type_ids: str | None = None
+    show_deleted: bool = Field(default=False)
 
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.payment_type_ids is not None:
+            params["payment_type_ids"] = self.payment_type_ids
+        if self.show_deleted is not False:
+            params["show_deleted"] = str(self.show_deleted).lower()
+        return params
+
+
+class LineItem(BaseModel):
     id: UUID
     item_id: UUID
     variant_id: UUID
@@ -39,16 +50,13 @@ class LineItem(BaseModel):
                 quantity=self.quantity,
                 price=self.price,
             )
-
         return f"{self.quantity}x{self.name}@{self.price}"
 
     def total_cost(self, precision: int = 2) -> float:
-        """Computes the total cost of a line item.""" 
         precision = precision if precision >= 0 else 2
         return round(self.quantity * self.price, precision)
 
     def net_profit(self, precision: int = 2) -> float:
-        """Compute the net profit gained from selling the item."""
         precision = precision if precision >= 0 else 2
         profit = self.total_cost(precision) - self.cost
         return round(profit, precision)
@@ -90,15 +98,16 @@ class Receipt(Base):
     def serialize_items(cls, values) -> list[LineItem]:
         return [
             LineItem(
-                id=item['id'],
-                item_id=item['item_id'],
-                variant_id=item['variant_id'],
-                name=item['item_name'],
-                sku=item['sku'],
-                cost=item['cost'],
-                price=item['price'],
-                quantity=item['quantity']
-            ) for item in values
+                id=item["id"],
+                item_id=item["item_id"],
+                variant_id=item["variant_id"],
+                name=item["item_name"],
+                sku=item["sku"],
+                cost=item["cost"],
+                price=item["price"],
+                quantity=item["quantity"],
+            )
+            for item in values
         ]
 
     @field_serializer("line_items", mode="plain")
@@ -112,8 +121,13 @@ class Receipt(Base):
         return value
 
     @field_serializer(
-        "customer_id", "employee_id", "store_id",
-        "pos_device_id", "payment_type_id", mode="plain")
+        "customer_id",
+        "employee_id",
+        "store_id",
+        "pos_device_id",
+        "payment_type_id",
+        mode="plain",
+    )
     def serialize_uuids(self, value: UUID) -> str:
         if isinstance(value, UUID):
             return str(value)
@@ -122,3 +136,25 @@ class Receipt(Base):
 
 class ReceiptListResponse(Pagination):
     items: list[Receipt] = Field(alias="receipts")
+
+
+class ReceiptListQuery(BaseListQuery):
+    receipt_numbers: str | None = None
+    since_receipt_number: str | None = None
+    before_receipt_number: str | None = None
+    store_id: str | None = None
+    order: str | None = None
+
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.receipt_numbers is not None:
+            params["receipt_numbers"] = self.receipt_numbers
+        if self.since_receipt_number is not None:
+            params["since_receipt_number"] = self.since_receipt_number
+        if self.before_receipt_number is not None:
+            params["before_receipt_number"] = self.before_receipt_number
+        if self.store_id is not None:
+            params["store_id"] = self.store_id
+        if self.order is not None:
+            params["order"] = self.order
+        return params

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, Field, field_serializer
-from loyverse_sdk.models.common import Pagination
+from loyverse_sdk.models.common import Pagination, BaseListQuery
 
 
 class PosDevice(BaseModel):
@@ -20,3 +20,16 @@ class PosDevice(BaseModel):
 
 class PosDeviceListResponse(Pagination):
     items: list[PosDevice] = Field(alias="pos_devices")
+
+
+class PosDeviceListQuery(BaseListQuery):
+    store_id: str | None = None
+    show_deleted: bool = Field(default=False)
+
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.store_id is not None:
+            params["store_id"] = self.store_id
+        if self.show_deleted is not False:
+            params["show_deleted"] = str(self.show_deleted).lower()
+        return params

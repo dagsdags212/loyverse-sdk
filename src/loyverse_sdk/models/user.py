@@ -2,7 +2,7 @@ import re
 from uuid import UUID
 from datetime import datetime, timedelta
 from pydantic import Field, field_validator, field_serializer
-from loyverse_sdk.models.common import Base, Pagination
+from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
 
 
 class User(Base):
@@ -12,7 +12,6 @@ class User(Base):
 
     @field_validator("name", "email", "phone_number", mode="before")
     def sanitize_strings(cls, value: str | None) -> str | None:
-        """Remove and collapse trailing whitespaces from strings"""
         if value:
             return re.sub(r"\s+", " ", value).strip()
 
@@ -33,6 +32,19 @@ class Employee(User):
 
 class EmployeeListResponse(Pagination):
     items: list[Employee] = Field(alias="employees")
+
+
+class EmployeeListQuery(BaseListQuery):
+    employee_ids: str | None = None
+    show_deleted: bool = Field(default=False)
+
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.employee_ids is not None:
+            params["employee_ids"] = self.employee_ids
+        if self.show_deleted is not False:
+            params["show_deleted"] = str(self.show_deleted).lower()
+        return params
 
 
 class Customer(User):
@@ -60,3 +72,16 @@ class Customer(User):
 
 class CustomerListResponse(Pagination):
     items: list[Customer] = Field(alias="customers")
+
+
+class CustomerListQuery(BaseListQuery):
+    customer_ids: str | None = None
+    email: str | None = None
+
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.customer_ids is not None:
+            params["customer_ids"] = self.customer_ids
+        if self.email is not None:
+            params["email"] = self.email
+        return params

@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from enum import Enum, unique
 from pydantic import BaseModel, Field, field_validator, field_serializer
-from loyverse_sdk.models.common import Pagination
+from loyverse_sdk.models.common import Pagination, BaseListQuery
 
 
 @unique
@@ -24,7 +24,6 @@ class BaseCategory(BaseModel):
 
     @field_validator("color", mode="before")
     def uppercase_color(cls, color: str) -> str:
-        """Capitalize the color attribute"""
         return color.upper()
 
     @field_serializer("id", mode="plain")
@@ -41,6 +40,22 @@ class Category(BaseCategory):
 
 class CategoryListResponse(Pagination):
     items: list[Category] = Field(alias="categories")
+
+
+class CategoryListQuery(BaseListQuery):
+    """Query parameters for GET /categories."""
+
+    category_ids: str | None = Field(default=None)
+    show_deleted: bool = Field(default=False)
+    limit: int = Field(default=50)
+
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.category_ids is not None:
+            params["category_ids"] = self.category_ids
+        if self.show_deleted is not False:
+            params["show_deleted"] = str(self.show_deleted).lower()
+        return params
 
 
 class CreateCategory(BaseCategory):

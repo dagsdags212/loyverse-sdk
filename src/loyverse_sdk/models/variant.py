@@ -1,6 +1,6 @@
 from uuid import UUID
 from pydantic import Field, NonNegativeFloat, field_serializer
-from loyverse_sdk.models.common import Base, Pagination
+from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
 
 
 class Variant(Base):
@@ -27,3 +27,22 @@ class Variant(Base):
 
 class VariantListResponse(Pagination):
     items: list[Variant] = Field(alias="variants")
+
+
+class VariantListQuery(BaseListQuery):
+    variants_ids: str | None = None
+    item_ids: str | None = None
+    sku: str | None = None
+    show_deleted: bool = Field(default=False)
+
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.variants_ids is not None:
+            params["variants_ids"] = self.variants_ids
+        if self.item_ids is not None:
+            params["items_ids"] = self.item_ids
+        if self.sku is not None:
+            params["sku"] = self.sku
+        if self.show_deleted is not False:
+            params["show_deleted"] = str(self.show_deleted).lower()
+        return params

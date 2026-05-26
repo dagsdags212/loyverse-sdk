@@ -1,11 +1,9 @@
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
-from loyverse_sdk.models.common import Pagination
+from loyverse_sdk.models.common import Pagination, BaseListQuery
 
 
 class Inventory(BaseModel):
-    """Inventory item stock levels per variant per store"""
-
     variant_id: str
     store_id: str
     in_stock: int = 0
@@ -26,3 +24,16 @@ class Inventory(BaseModel):
 
 class InventoryListResponse(Pagination):
     items: list[Inventory] = Field(alias="inventory_levels")
+
+
+class InventoryListQuery(BaseListQuery):
+    store_ids: str | None = None
+    variant_ids: str | None = None
+
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.store_ids is not None:
+            params["store_ids"] = self.store_ids
+        if self.variant_ids is not None:
+            params["variant_ids"] = self.variant_ids
+        return params

@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Self
 from uuid import UUID
 from pydantic import Field, model_validator, field_serializer
-from loyverse_sdk.models.common import Base, Pagination
+from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
 
 
 class DiscountType(StrEnum):
@@ -23,7 +23,6 @@ class Discount(Base):
 
     @model_validator(mode="after")
     def validate_discount_amount(self) -> Self:
-        """Sets discount_amount only if type is FIXED_AMOUNT"""
         if self.type == DiscountType.FIXED_AMOUNT:
             if self.discount_amount is None:
                 raise ValueError("discount_amount required but not provided")
@@ -33,7 +32,6 @@ class Discount(Base):
 
     @model_validator(mode="after")
     def validate_discount_percent(self) -> Self:
-        """Sets discount_percent only if type is FIXED_PERCENT"""
         if self.type == DiscountType.FIXED_PERCENT:
             if self.discount_percent is None:
                 raise ValueError("discount_percent required but not provided")
@@ -46,9 +44,21 @@ class Discount(Base):
         return [str(id) for id in value]
 
     def list_valid_discount_types(self) -> list:
-        """Returns a list of valid discount types"""
         return list(DiscountType)
 
 
 class DiscountListResponse(Pagination):
     items: list[Discount] = Field(alias="discounts")
+
+
+class DiscountListQuery(BaseListQuery):
+    discount_ids: str | None = None
+    show_deleted: bool = Field(default=False)
+
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.discount_ids is not None:
+            params["discount_ids"] = self.discount_ids
+        if self.show_deleted is not False:
+            params["show_deleted"] = str(self.show_deleted).lower()
+        return params

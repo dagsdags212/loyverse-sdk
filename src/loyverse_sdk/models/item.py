@@ -1,7 +1,7 @@
 from typing import Self
 from uuid import UUID
 from pydantic import Field, model_validator, field_serializer
-from loyverse_sdk.models.common import Base, Pagination
+from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
 
 
 class Item(Base):
@@ -28,21 +28,41 @@ class Item(Base):
 
     @model_validator(mode="after")
     def set_default_handle(self) -> Self:
-        """Sets handle to the value of the item name if not provided"""
         if self.handle is None:
             self.handle = self.name
         return self
 
-    @field_serializer("reference_id", "category_id", "primary_supplier_id", mode="plain")
+    @field_serializer(
+        "reference_id", "category_id", "primary_supplier_id", mode="plain"
+    )
     def serialize_uuids(self, value: UUID) -> str:
         if isinstance(value, UUID):
             return str(value)
         return value
 
-    @field_serializer("tax_ids", "modifier_ids",  mode="plain")
+    @field_serializer("tax_ids", "modifier_ids", mode="plain")
     def serialize_uuid_lists(self, value: list[UUID]) -> list[str]:
         return [str(id) for id in value]
 
 
 class ItemListResponse(Pagination):
     items: list[Item] = Field(alias="items")
+
+
+class ItemListQuery(BaseListQuery):
+    item_ids: str | None = None
+    store_id: str | None = None
+    category_id: str | None = None
+    show_deleted: bool = Field(default=False)
+
+    def to_params(self) -> dict:
+        params = super().to_params()
+        if self.item_ids is not None:
+            params["item_ids"] = self.item_ids
+        if self.store_id is not None:
+            params["store_id"] = self.store_id
+        if self.category_id is not None:
+            params["category_id"] = self.category_id
+        if self.show_deleted is not False:
+            params["show_deleted"] = str(self.show_deleted).lower()
+        return params
