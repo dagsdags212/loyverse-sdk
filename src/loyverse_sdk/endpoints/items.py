@@ -3,11 +3,15 @@ from loyverse_sdk.endpoints.mixins import (
     ListMixin,
     RetrieveMixin,
     PaginationMixin,
+    CreateMixin,
+    UpdateMixin,
 )
 from loyverse_sdk.models import Item, ItemListResponse
 
 
-class ItemsEndpoint(BaseEndpoint, ListMixin, RetrieveMixin, PaginationMixin):
+class ItemsEndpoint(
+    BaseEndpoint, ListMixin, RetrieveMixin, PaginationMixin, CreateMixin, UpdateMixin
+):
     path = "items"
 
     async def create(self, payload: dict):
