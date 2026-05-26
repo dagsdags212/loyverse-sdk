@@ -9,6 +9,8 @@ The SDK provides:
 - **Type-safe** request/response models using Pydantic
 - **Automatic pagination** with cursor-based iteration via `iter_all()`
 - **Full CRUD operations** for supported endpoints
+- **Flat-file export** — write query results directly to CSV or Parquet files
+- **DuckDB export** — local data warehousing with relational schema
 - **16 endpoints**: categories, customers, discounts, devices, employees, inventory, items, merchant, modifiers, receipts, shifts, stores, suppliers, taxes, webhooks, variants
 
 ### Codebase Structure
@@ -17,6 +19,8 @@ The SDK provides:
 - `client.py` - Main `LoyverseClient` class with endpoint access
 - `endpoints/` - Endpoint classes using mixin pattern for CRUD operations
 - `models/` - Pydantic models for request/response validation
+- `exporters/` - Flat-file exporter for CSV and Parquet output
+- `db/` - DuckDB export pipeline for local data warehousing
 - `auth.py` - Token-based authentication
 - `core/` - Configuration, logging, and utilities
 
@@ -282,6 +286,178 @@ async for webhook in client.webhooks.iter_all(query):
 ```
 
 **Validation:** Query models validate their inputs — e.g., `created_at_min` must be less than or equal to `created_at_max`, and `limit` must be between 1 and 250. Invalid queries raise `ValidationError` with a descriptive message.
+
+## Flat-File Export
+
+The SDK can write query results directly to CSV and Parquet files — no database needed. Combine any endpoint query with `client.export_to_csv()` or `client.export_to_parquet()` to save data locally for spreadsheet analysis, BI tools, or data pipelines.
+
+### Features
+
+- ✅ **CSV export** — comma-delimited with headers, double-quote quoting, UTF-8 encoding
+- ✅ **Parquet export** — columnar format with Snappy compression, preserves column types
+- ✅ **Zero configuration** — uses Polars (already a dependency), no extra installs
+- ✅ **Any Pydantic model** — works with any list of model instances from any endpoint
+- ✅ **Client convenience** — `client.export_to_csv(data, path)` and `client.export_to_parquet(data, path)`
+- ✅ **Standalone functions** — `from loyverse_sdk.exporters import export_csv, export_parquet`
+
+### Quick Start
+
+**Fetch customers between a date range and export to CSV:**
+
+```python
+import asyncio
+from datetime import datetime
+from loyverse_sdk import LoyverseClient
+from loyverse_sdk.models import CustomerListQuery
+
+async def main():
+    client = LoyverseClient()
+
+    # Filter customers created between two dates
+    query = CustomerListQuery(
+        created_at_min=datetime(2024, 1, 1),
+        created_at_max=datetime(2024, 6, 30),
+    )
+
+    # Fetch all matching customers via pagination
+    customers = []
+    async for customer in client.customers.iter_all(query):
+        customers.append(customer)
+
+    print(f"Found {len(customers)} customers in H1 2024")
+
+    # Write results to disk with a single call
+    client.export_to_csv(customers, "customers_h1_2024.csv")
+    print("Exported to customers_h1_2024.csv")
+
+    await client.close()
+
+asyncio.run(main())
+```
+
+**Export all items to Parquet for efficient storage:**
+
+```python
+# Stream every item in the catalog via pagination
+items = []
+async for item in client.items.iter_all(limit=250):
+    items.append(item)
+
+# Parquet preserves types and compresses automatically
+client.export_to_parquet(items, "items_catalog.parquet")
+print(f"Exported {len(items)} items to Parquet")
+```
+
+### Export Methods
+
+#### 1. Client Convenience Methods
+
+The simplest path — call directly on your `LoyverseClient` instance:
+
+```python
+# Export to CSV
+client.export_to_csv(data, "output.csv")
+
+# Export to Parquet
+client.export_to_parquet(data, "output.parquet")
+```
+
+Both methods accept a list of Pydantic model instances and a file path (`str` or `pathlib.Path`). Polars is imported lazily so flat-file dependencies are only loaded when you actually use them.
+
+#### 2. Standalone Module Functions
+
+Use the exporters directly without a client instance:
+
+```python
+from loyverse_sdk.exporters import export_csv, export_parquet
+
+# Export from any script that has model instances
+export_csv(models, "data.csv")
+export_parquet(models, "data.parquet")
+```
+
+#### 3. FlatFileExporter Class
+
+For full control, instantiate the exporter directly:
+
+```python
+from loyverse_sdk.exporters import FlatFileExporter
+
+exporter = FlatFileExporter()
+exporter.export_csv(models, "output.csv")
+exporter.export_parquet(models, "output.parquet")
+```
+
+### Filtering Before Export
+
+Combine query models with client-side filtering for precise exports:
+
+```python
+from datetime import datetime, timedelta
+from loyverse_sdk.models import ReceiptListQuery, CustomerListQuery
+
+# Receipts from last 7 days, sorted newest first
+last_week = datetime.now() - timedelta(days=7)
+query = ReceiptListQuery(
+    created_at_min=last_week,
+    order="created_at_desc",
+    limit=250,
+)
+
+receipts = []
+async for receipt in client.receipts.iter_all(query):
+    receipts.append(receipt)
+
+client.export_to_csv(receipts, "receipts_last_week.csv")
+
+# Customers by email domain (client-side filter after API query)
+query = CustomerListQuery(limit=250)
+response = await client.customers.list(query)
+
+gmail_customers = [
+    c for c in response.items
+    if c.email and c.email.endswith("@gmail.com")
+]
+
+client.export_to_csv(gmail_customers, "gmail_customers.csv")
+```
+
+### Comparison: Flat-File vs DuckDB Export
+
+| Feature | Flat-File (CSV/Parquet) | DuckDB Export |
+|---------|------------------------|---------------|
+| Setup | Zero — works instantly | Requires `duckdb` import |
+| Output | Standalone files (.csv, .parquet) | Database file (.duckdb) |
+| Schema | Column headers from model fields | Relational with FK constraints |
+| Use case | Quick exports, spreadsheet analysis | Analytics, SQL queries, BI tools |
+| Performance | File I/O (good for batches) | Columnar storage + indexes |
+| Incremental | Manual (overwrite files) | UPSERT via date range filtering |
+
+Both exporters work with the same Pydantic model instances — you can query once and export to both formats:
+
+```python
+# Query once
+response = await client.customers.list(query)
+
+# Export to both formats from the same data
+client.export_to_csv(response.items, "customers.csv")
+client.export_to_parquet(response.items, "customers.parquet")
+
+# Also export to DuckDB for SQL analytics
+await client.export_to_duckdb("loyverse.duckdb", resources=["customers"])
+```
+
+### Complete Example
+
+See `examples/export_flat_files.py` for working examples including:
+- Customers filtered by date range → CSV
+- All items via pagination → Parquet
+- Latest receipts → CSV
+- Client-side filtering patterns
+
+```bash
+python examples/export_flat_files.py
+```
 
 ## DuckDB Export
 
@@ -589,13 +765,12 @@ ORDER BY item_count DESC;
 
 ### Complete Example
 
-See `examples/duckdb_export.py` for comprehensive examples including:
-- Full and selective exports
-- Date range filtering
-- Progress tracking
-- Querying exported data
-- Incremental updates
+See the example scripts for end-to-end workflows:
+
+- `examples/export_flat_files.py` — Flat-file export (CSV + Parquet) with date-range filtering and client-side filtering
+- `examples/duckdb_export.py` — DuckDB export with full/selective exports, date ranges, progress tracking, and incremental updates
 
 ```bash
+python examples/export_flat_files.py
 python examples/duckdb_export.py
 ```

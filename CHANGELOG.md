@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-05-27
+
+### Added
+- **Flat-file export (CSV + Parquet)** — `FlatFileExporter` class in new `loyverse_sdk.exporters` package for writing Pydantic model instances directly to CSV and Parquet files using Polars
+- **`export_csv()` and `export_parquet()`** — Module-level convenience functions for one-shot flat-file exports without instantiating an exporter
+- **`LoyverseClient.export_to_csv()` and `export_to_parquet()`** — Client convenience methods that delegate to the exporters package with lazy Polars import
+- **`examples/export_flat_files.py`** — End-to-end example demonstrating query→filter→export workflows (customers by date range → CSV, all items → Parquet, latest receipts → CSV)
+- **21 new unit and integration tests** — 17 exporter tests (CSV headers, Parquet type preservation, empty input handling, invalid paths) + 4 client delegation tests
+
 ## [0.2.0] - 2025-05-27
 
 ### Added
