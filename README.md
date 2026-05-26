@@ -9,7 +9,7 @@ The SDK provides:
 - **Type-safe** request/response models using Pydantic
 - **Automatic pagination** with cursor-based iteration via `iter_all()`
 - **Full CRUD operations** for supported endpoints
-- **14 endpoints**: categories, customers, discounts, devices, employees, items, merchant, modifiers, receipts, stores, suppliers, taxes, webhooks, variants
+- **16 endpoints**: categories, customers, discounts, devices, employees, inventory, items, merchant, modifiers, receipts, shifts, stores, suppliers, taxes, webhooks, variants
 
 ### Codebase Structure
 
@@ -23,6 +23,13 @@ The SDK provides:
 ## Installation
 
 ```bash
+# Install from PyPI - recommended (default)
+uv pip install loyverse_sdk
+
+# Add as a project dependency - recommended for uv projects
+up add loyverse_sdk 
+
+# Install from GitHub
 uv pip install git+https://github.com/dagsdags212/loyverse_sdk.git
 ```
 
@@ -47,14 +54,12 @@ import asyncio
 from loyverse_sdk import LoyverseClient
 
 async def main():
-    # Create client (automatically loads token from environment)
     client = LoyverseClient()
 
-    # List customers
-    response = await client.customers.list(limit=10)
+    # List customers (uses default limit from config)
+    response = await client.customers.list()
     print(f"Found {len(response.items)} customers")
 
-    # Close connection
     await client.close()
 
 asyncio.run(main())
@@ -66,20 +71,22 @@ asyncio.run(main())
 
 The customers endpoint manages customer data from your POS system.
 
-**List customers with pagination:**
+**List customers with a query model:**
 
 ```python
-# Get first page of customers
-response = await client.customers.list(limit=50)
+from loyverse_sdk.models import CustomerListQuery
+
+# Use a query model to filter and paginate
+query = CustomerListQuery(limit=50, email="jane@example.com")
+response = await client.customers.list(query)
 
 for customer in response.items:
     print(f"{customer.name} - {customer.email}")
-    print(f"  Total visits: {customer.total_visits}")
-    print(f"  Total spent: ${customer.total_spent}")
 
-# Get next page using cursor
-if response.cursor:
-    next_page = await client.customers.list(limit=50, cursor=response.cursor)
+# Next page using cursor from response
+if response.next_cursor:
+    next_query = CustomerListQuery(cursor=response.next_cursor, limit=50)
+    next_page = await client.customers.list(next_query)
 ```
 
 **Retrieve a single customer:**
@@ -128,22 +135,31 @@ print(result)  # {'deleted_object_ids': ['customer-uuid']}
 **Iterate through all customers:**
 
 ```python
-# Automatically handles pagination across all pages
 async for customer in client.customers.iter_all():
     print(f"{customer.name} - Last visit: {customer.last_visit}")
 ```
 
-**Filter customers by date:**
+**Filter customers by date and attributes using a query model:**
 
 ```python
-from datetime import datetime
+from datetime import datetime, timedelta
+from loyverse_sdk.models import CustomerListQuery
 
 # Get customers created in the last 30 days
 start_date = datetime.now() - timedelta(days=30)
+query = CustomerListQuery(created_at_min=start_date)
 
-async for customer in client.customers.iter_all(created_at_min=start_date):
-    tenure = customer.tenure()  # timedelta between first and last visit
+async for customer in client.customers.iter_all(query):
+    tenure = customer.tenure()
     print(f"{customer.name} - Customer for {tenure.days} days")
+
+# Filter by multiple criteria
+query = CustomerListQuery(
+    email="john@example.com",
+    created_at_min=datetime(2024, 1, 1),
+    created_at_max=datetime(2024, 12, 31),
+)
+response = await client.customers.list(query)
 ```
 
 ### Other Endpoints
@@ -156,10 +172,12 @@ client.customers    # Customer records
 client.discounts    # Discount rules
 client.devices      # POS devices
 client.employees    # Staff members
+client.inventory    # Stock levels
 client.items        # Inventory items
 client.merchant     # Merchant info
 client.modifiers    # Item modifiers
 client.receipts     # Transaction receipts
+client.shifts       # Employee shifts
 client.stores       # Store locations
 client.suppliers    # Supplier records
 client.taxes        # Tax configurations
@@ -168,6 +186,102 @@ client.webhooks     # Webhook subscriptions
 ```
 
 Each endpoint supports operations based on the [Loyverse API capabilities](https://developer.loyverse.com/docs/).
+
+## Query Models
+
+All list endpoints accept an optional query model to filter, paginate, and sort results. Query models are Pydantic models with typed fields — your IDE will autocomplete available filters.
+
+**Import from `loyverse_sdk.models`:**
+
+```python
+from loyverse_sdk.models import (
+    CategoryListQuery,
+    CustomerListQuery,
+    DiscountListQuery,
+    EmployeeListQuery,
+    InventoryListQuery,
+    ItemListQuery,
+    ModifierListQuery,
+    PaymentTypeListQuery,
+    PosDeviceListQuery,
+    ReceiptListQuery,
+    StoreListQuery,
+    SupplierListQuery,
+    TaxListQuery,
+    WebhookListQuery,
+    VariantListQuery,
+)
+```
+
+**Common pattern for all list/iter_all calls:**
+
+```python
+# Pass query model with filters
+query = FooListQuery(limit=50, some_filter="value")
+response = await client.foo.list(query)
+
+# Or iterate with a query model
+async for item in client.foo.iter_all(FooListQuery(some_filter="value")):
+    print(item.name)
+
+# Omit query to use defaults (limit=250, no filters)
+response = await client.foo.list()
+```
+
+**Pagination:**
+
+```python
+# Use cursor from previous response to get next page
+next_query = FooListQuery(cursor=response.next_cursor, limit=50)
+next_page = await client.foo.list(next_query)
+```
+
+**Date range filtering:**
+
+```python
+from datetime import datetime, timedelta
+
+# Records updated in the last 7 days
+recent = datetime.now() - timedelta(days=7)
+query = FooListQuery(updated_at_min=recent)
+
+async for item in client.foo.iter_all(query):
+    print(item.name)
+```
+
+**Endpoint-specific filters:**
+
+Each query model exposes the filters supported by its endpoint. Examples:
+
+```python
+# Inventory: filter by store and variants
+query = InventoryListQuery(store_ids="store-1,store-2", variant_ids="var-1,var-2")
+response = await client.inventory.list(query)
+
+# Receipts: filter by store, date range, and sort order
+query = ReceiptListQuery(
+    store_id="store-abc",
+    created_at_min=datetime(2024, 1, 1),
+    created_at_max=datetime(2024, 12, 31),
+    order="created_at_desc",
+)
+async for receipt in client.receipts.iter_all(query):
+    print(receipt.id)
+
+# Items: filter by category and include deleted items
+query = ItemListQuery(category_id="cat-123", show_deleted=True)
+async for item in client.items.iter_all(query):
+    print(item.name)
+
+# Webhooks: filter by type and status
+from loyverse_sdk.models import WebhookListQuery, WebhookType, WebhookStatus
+
+query = WebhookListQuery(type=WebhookType.RECEIPTS_UPDATE, status=WebhookStatus.ENABLED)
+async for webhook in client.webhooks.iter_all(query):
+    print(webhook.url)
+```
+
+**Validation:** Query models validate their inputs — e.g., `created_at_min` must be less than or equal to `created_at_max`, and `limit` must be between 1 and 250. Invalid queries raise `ValidationError` with a descriptive message.
 
 ## DuckDB Export
 
@@ -184,7 +298,7 @@ DuckDB is an analytics-focused database perfect for:
 
 ### Features
 
-- ✅ **14 main resource tables** (categories, items, receipts, etc.)
+- ✅ **15 main resource tables** (categories, items, receipts, etc.)
 - ✅ **Relational schema** with foreign keys and indexes
 - ✅ **Junction tables** for many-to-many relationships
 - ✅ **Child tables** for nested data (line items, modifier options)
@@ -349,7 +463,7 @@ counts = await client.export_to_duckdb(
 
 The exported database includes:
 
-**Main Tables (14):**
+**Main Tables (15):**
 - `categories` - Item categories
 - `stores` - Store locations
 - `suppliers` - Supplier records
@@ -363,6 +477,7 @@ The exported database includes:
 - `items` - Inventory items
 - `variants` - Item variants
 - `receipts` - Transaction receipts
+- `inventory` - Stock levels
 - `merchant` - Merchant info
 
 **Junction Tables (8):**
