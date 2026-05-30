@@ -15,7 +15,7 @@ class PaymentType(Base):
         return value.upper()
 
 
-class PaymentTypeListReponse(Pagination):
+class PaymentTypeListResponse(Pagination):
     items: list[PaymentType] = Field(alias="payment_types")
 
 

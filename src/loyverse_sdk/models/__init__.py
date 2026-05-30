@@ -20,7 +20,7 @@ from loyverse_sdk.models.user import (
 from loyverse_sdk.models.merchant import Merchant
 from loyverse_sdk.models.receipt import (
     PaymentType,
-    PaymentTypeListReponse,
+    PaymentTypeListResponse,
     PaymentTypeListQuery,
     Receipt,
     ReceiptListQuery,
