@@ -13,17 +13,18 @@ class Merchant(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
 
     @field_validator("country", mode="before")
-    def validate_country_code(cls, country: str) -> str:
+    def validate_country_code(cls, country: str | None) -> str | None:
         """Checks if the passed country conforms to ISO 3166-1-alpha-2 format"""
+        if country is None:
+            return None
         if len(country) != 2:
             raise ValidationError("country must be a two-character code")
         return country.upper()
 
-    @field_validator("currency", mode="after")
+    @field_validator("currency", mode="before")
     def extract_currency_code(cls, currency: dict) -> str:
         """Extracts the code key from the currency object"""
         currency_code = currency.get("code")
         if currency_code is None:
             raise ValidationError("code field does not exist in currency object")
         return currency_code
-

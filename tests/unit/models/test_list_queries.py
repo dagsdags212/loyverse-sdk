@@ -410,11 +410,11 @@ class TestReceiptListQuery:
         assert q.to_params()["store_id"] == "store-xyz"
 
     def test_order_passed_to_params(self):
-        q = ReceiptListQuery(order="created_at_asc")
+        q = ReceiptListQuery(sort_order="created_at_asc")
         assert q.to_params()["order"] == "created_at_asc"
 
     def test_order_desc_passed_to_params(self):
-        q = ReceiptListQuery(order="created_at_desc")
+        q = ReceiptListQuery(sort_order="created_at_desc")
         assert q.to_params()["order"] == "created_at_desc"
 
     def test_date_filters_included(self):
@@ -608,7 +608,7 @@ class TestQueryModelUsageWithEndpoints:
     def test_receipt_list_query_serializes(self):
         q = ReceiptListQuery(
             store_id="store-1",
-            order="created_at_desc",
+            sort_order="created_at_desc",
             created_at_min=datetime(2024, 1, 1),
         )
         p = q.to_params()

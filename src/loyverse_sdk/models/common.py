@@ -14,17 +14,47 @@ from loyverse_sdk.utils import standardize_datetime_str
 
 class Base(BaseModel):
     id: UUID = Field(default_factory=uuid4)
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
-    deleted_at: datetime | None = Field(default=None, exclude=True)
+    created_at: datetime | None = Field(default=None)
+    updated_at: datetime | None = Field(default=None)
+    deleted_at: datetime | None = Field(default=None)
 
-    @field_validator("created_at", "updated_at", "deleted_at", mode="after")
-    def utc_to_local(cls, value: datetime | None) -> datetime:
-        if value:
+    @model_validator(mode="after")
+    def validate_timestamps(self) -> "Base":
+        """Ensure timestamps are properly set."""
+        # Set defaults if timestamps are None (API may return null values)
+        now = datetime.now()
+        if self.created_at is None:
+            self.created_at = now
+        if self.updated_at is None:
+            self.updated_at = now
+
+        # Convert UTC to local timezone
+        if self.created_at or self.updated_at or self.deleted_at:
             _tz = config.TIMEZONE if config.TIMEZONE else "Asia/Manila"
             local_tz = pytz.timezone(_tz)
-            local_dt = value.replace(tzinfo=pytz.utc).astimezone(local_tz)
-            return local_dt
+
+            if self.created_at and self.created_at.tzinfo is None:
+                self.created_at = self.created_at.replace(tzinfo=pytz.utc).astimezone(
+                    local_tz
+                )
+            if self.updated_at and self.updated_at.tzinfo is None:
+                self.updated_at = self.updated_at.replace(tzinfo=pytz.utc).astimezone(
+                    local_tz
+                )
+            if self.deleted_at and self.deleted_at.tzinfo is None:
+                self.deleted_at = self.deleted_at.replace(tzinfo=pytz.utc).astimezone(
+                    local_tz
+                )
+
+        return self
+
+    @field_validator("created_at", "updated_at", "deleted_at", mode="before")
+    @classmethod
+    def parse_timestamps(cls, value):
+        """Handle API responses with null or empty timestamp values."""
+        if value is None or value == "" or value == "null":
+            return None
+        return value
 
     @field_serializer("id", mode="plain")
     def serialize_uuid(self, value: UUID) -> str:

@@ -1,6 +1,13 @@
 from datetime import datetime
 from typing import Any
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
+from loyverse_sdk.models.common import BaseListQuery
+
+
+class ShiftListQuery(BaseListQuery):
+    """Query parameters for GET /shifts."""
+
+    pass
 
 
 class Shift(BaseModel):
