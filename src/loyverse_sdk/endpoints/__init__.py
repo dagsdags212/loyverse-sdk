@@ -7,6 +7,7 @@ from loyverse_sdk.endpoints.items import ItemsEndpoint
 from loyverse_sdk.endpoints.inventory import InventoryEndpoint
 from loyverse_sdk.endpoints.merchant import MerchantEndpoint
 from loyverse_sdk.endpoints.modifiers import ModifiersEndpoint
+from loyverse_sdk.endpoints.payment_types import PaymentTypesEndpoint
 from loyverse_sdk.endpoints.receipts import ReceiptsEndpoint
 from loyverse_sdk.endpoints.shifts import ShiftsEndpoint
 from loyverse_sdk.endpoints.stores import StoresEndpoint

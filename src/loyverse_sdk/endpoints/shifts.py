@@ -5,18 +5,20 @@ from loyverse_sdk.endpoints.mixins import (
     RetrieveMixin,
     PaginationMixin,
 )
-from loyverse_sdk.models import Shift, ShiftListResponse
+from loyverse_sdk.models import Shift, ShiftListQuery, ShiftListResponse
 
 
 class ShiftsEndpoint(BaseEndpoint, ListMixin, RetrieveMixin, PaginationMixin):
     path = "shifts"
 
-    async def list(self, limit: int = config.PAGE_LIMIT, cursor: str | None = None):
-        return await super().list(limit=limit, cursor=cursor, model=ShiftListResponse)
+    async def list(self, query: ShiftListQuery | None = None):
+        query = query or ShiftListQuery()
+        return await super().list(model=ShiftListResponse, **query.to_params())
 
     async def retrieve(self, id: str):
         return await super().retrieve(id, model=Shift)
 
-    async def iter_all(self, **kwargs):
-        async for item in super().iter_all(**kwargs):
+    async def iter_all(self, query: ShiftListQuery | None = None):
+        query = query or ShiftListQuery()
+        async for item in super().iter_all(**query.to_params()):
             yield Shift.model_validate(item)

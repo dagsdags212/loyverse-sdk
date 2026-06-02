@@ -27,6 +27,7 @@ from loyverse_sdk.endpoints import (
     InventoryEndpoint,
     MerchantEndpoint,
     ModifiersEndpoint,
+    PaymentTypesEndpoint,
     PosDevicesEndpoints,
     ReceiptsEndpoint,
     ShiftsEndpoint,
@@ -59,12 +60,13 @@ class LoyverseClient:
         self.categories = CategoriesEndpoint(self)
         self.customers = CustomersEndpoint(self)
         self.discounts = DiscountsEndpoint(self)
-        self.devices = PosDevicesEndpoints(self)
         self.employees = EmployeesEndpoint(self)
         self.inventory = InventoryEndpoint(self)
         self.items = ItemsEndpoint(self)
         self.merchant = MerchantEndpoint(self)
         self.modifiers = ModifiersEndpoint(self)
+        self.payment_types = PaymentTypesEndpoint(self)
+        self.pos_devices = PosDevicesEndpoints(self)
         self.receipts = ReceiptsEndpoint(self)
         self.shifts = ShiftsEndpoint(self)
         self.stores = StoresEndpoint(self)
@@ -80,12 +82,13 @@ class LoyverseClient:
             "categories": self.categories,
             "customers": self.customers,
             "discounts": self.discounts,
-            "devices": self.devices,
             "employees": self.employees,
             "inventory": self.inventory,
             "items": self.items,
             "merchant": self.merchant,
             "modifiers": self.modifiers,
+            "payment_types": self.payment_types,
+            "pos_devices": self.pos_devices,
             "receipts": self.receipts,
             "shifts": self.shifts,
             "stores": self.stores,
@@ -186,6 +189,7 @@ class LoyverseClient:
         batch_size: int = 1000,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
         create_indexes: bool = True,
+        show_progress: bool = True,
     ) -> dict[str, int]:
         """
         Export Loyverse data to DuckDB database.
@@ -204,6 +208,8 @@ class LoyverseClient:
             batch_size: Number of records to insert per transaction (default: 1000)
             progress_callback: Optional callback function(resource_name, current, total)
             create_indexes: Whether to create indexes after export (default: True)
+            show_progress: Display real-time progress with Rich (default: True). Set to
+                False for silent operation or when providing a custom progress_callback.
 
         Returns:
             Dictionary mapping resource names to record counts exported
@@ -240,7 +246,7 @@ class LoyverseClient:
         """
         from loyverse_sdk.db.exporter import DuckDBExporter
 
-        exporter = DuckDBExporter(self, db_path)
+        exporter = DuckDBExporter(self, db_path, show_progress=show_progress)
         try:
             return await exporter.export_all(
                 resources=resources,
@@ -300,7 +306,7 @@ class LoyverseClient:
         """
         from loyverse_sdk.db.exporter import DuckDBExporter
 
-        exporter = DuckDBExporter(self, db_path)
+        exporter = DuckDBExporter(self, db_path, show_progress=show_progress)
         try:
             return await exporter.export_resource(
                 resource_name,
