@@ -36,8 +36,14 @@ dependency-groups = [
   "respx>=0.22.0",
 ]
 
+[project.optional-dependencies]
+mcp = [
+    "mcp>=1.0.0",
+]
+
 [project.scripts]
 loyverse = "loyverse_sdk.cli.main:app"
+loyverse-mcp = "loyverse_sdk.mcp.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/dagsdags212/loyverse_sdk"
