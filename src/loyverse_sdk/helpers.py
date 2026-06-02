@@ -6,9 +6,7 @@ from loyverse_sdk.models.receipt import Receipt
 
 
 async def fetch_latest_receipt(
-    client: LoyverseClient,
-    *,
-    debug: bool = False
+    client: LoyverseClient, *, debug: bool = False
 ) -> Receipt:
     """
     Returns the latest issued receipt.
@@ -26,18 +24,14 @@ async def fetch_latest_receipt(
     records = await client.receipts.list(limit=1)
     if len(records.items) == 0:
         raise ResourceNotFoundError(
-            "No receipts found in the system",
-            resource_type="receipts"
+            "No receipts found in the system", resource_type="receipts"
         )
 
     return records.items[0]
 
 
 async def fetch_latest_receipts(
-    client: LoyverseClient,
-    n: int,
-    *,
-    debug: bool = False
+    client: LoyverseClient, n: int, *, debug: bool = False
 ) -> list[Receipt]:
     """
     Returns the N latest issued receipts.
@@ -70,17 +64,14 @@ async def fetch_latest_receipts(
 
     if len(records) == 0:
         raise ResourceNotFoundError(
-            "No receipts found in the system",
-            resource_type="receipts"
+            "No receipts found in the system", resource_type="receipts"
         )
 
     return records[:n]
 
 
 async def fetch_receipts_today(
-    client: LoyverseClient,
-    *,
-    debug: bool = False
+    client: LoyverseClient, *, debug: bool = False
 ) -> list[Receipt]:
     """Returns a list of receipts issue on or after the current date."""
 
@@ -101,10 +92,7 @@ async def fetch_receipts_today(
 
 
 async def fetch_receipts_since(
-    client: LoyverseClient,
-    dt: datetime | date,
-    *,
-    debug: bool = False
+    client: LoyverseClient, dt: datetime | date, *, debug: bool = False
 ) -> list[Receipt]:
     """
     Returns a list of receipts issued on or after the given date.

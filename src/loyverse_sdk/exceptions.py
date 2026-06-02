@@ -16,6 +16,7 @@ class LoyverseSDKError(Exception):
     All custom exceptions in the SDK inherit from this class,
     making it easy to catch any SDK-related error.
     """
+
     pass
 
 
@@ -38,7 +39,7 @@ class APIError(LoyverseSDKError):
         status_code: int,
         payload: Any,
         message: str | None = None,
-        endpoint: str | None = None
+        endpoint: str | None = None,
     ) -> None:
         self.status_code = status_code
         self.payload = payload
@@ -81,7 +82,7 @@ class BadRequestError(APIError):
             status_code=400,
             payload=payload,
             message="Bad request - invalid parameters or malformed request",
-            endpoint=endpoint
+            endpoint=endpoint,
         )
 
 
@@ -98,7 +99,7 @@ class AuthenticationError(APIError):
             status_code=401,
             payload=payload,
             message="Authentication failed - invalid or missing API token",
-            endpoint=endpoint
+            endpoint=endpoint,
         )
 
 
@@ -115,7 +116,7 @@ class ForbiddenError(APIError):
             status_code=403,
             payload=payload,
             message="Access forbidden - insufficient permissions",
-            endpoint=endpoint
+            endpoint=endpoint,
         )
 
 
@@ -127,16 +128,15 @@ class NotFoundError(APIError):
     Verify that the ID or parameters you're using are correct.
     """
 
-    def __init__(self, payload: Any, endpoint: str | None = None, resource_id: str | None = None) -> None:
+    def __init__(
+        self, payload: Any, endpoint: str | None = None, resource_id: str | None = None
+    ) -> None:
         message = "Resource not found"
         if resource_id:
             message = f"Resource with ID '{resource_id}' not found"
 
         super().__init__(
-            status_code=404,
-            payload=payload,
-            message=message,
-            endpoint=endpoint
+            status_code=404, payload=payload, message=message, endpoint=endpoint
         )
         self.resource_id = resource_id
 
@@ -153,20 +153,14 @@ class RateLimitError(APIError):
     """
 
     def __init__(
-        self,
-        payload: Any,
-        endpoint: str | None = None,
-        retry_after: int | None = None
+        self, payload: Any, endpoint: str | None = None, retry_after: int | None = None
     ) -> None:
         message = "Rate limit exceeded"
         if retry_after:
             message = f"{message} - retry after {retry_after} seconds"
 
         super().__init__(
-            status_code=429,
-            payload=payload,
-            message=message,
-            endpoint=endpoint
+            status_code=429, payload=payload, message=message, endpoint=endpoint
         )
         self.retry_after = retry_after
 
@@ -179,12 +173,14 @@ class ServerError(APIError):
     These errors are typically temporary - retry the request after a delay.
     """
 
-    def __init__(self, status_code: int, payload: Any, endpoint: str | None = None) -> None:
+    def __init__(
+        self, status_code: int, payload: Any, endpoint: str | None = None
+    ) -> None:
         super().__init__(
             status_code=status_code,
             payload=payload,
             message=f"Server error ({status_code}) - the API is experiencing issues",
-            endpoint=endpoint
+            endpoint=endpoint,
         )
 
 
@@ -197,6 +193,7 @@ class ConfigurationError(LoyverseSDKError):
     - Invalid base URL
     - Missing required environment variables
     """
+
     pass
 
 
@@ -216,10 +213,7 @@ class ValidationError(LoyverseSDKError):
     """
 
     def __init__(
-        self,
-        message: str,
-        validation_errors: Any = None,
-        model_name: str | None = None
+        self, message: str, validation_errors: Any = None, model_name: str | None = None
     ) -> None:
         self.validation_errors = validation_errors
         self.model_name = model_name
@@ -240,6 +234,7 @@ class PaginationError(LoyverseSDKError):
     - Pagination loop detected
     - Missing pagination metadata
     """
+
     pass
 
 

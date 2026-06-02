@@ -10,6 +10,7 @@ The SDK provides:
 - **Automatic pagination** with cursor-based iteration via `iter_all()`
 - **Full CRUD operations** for supported endpoints
 - **CLI** — `loyverse` command for listing, creating, updating, deleting, and exporting resources
+- **MCP server** — `loyverse-mcp` stdio server exposing 18 read-only tools to LLM clients (Claude Desktop, etc.)
 - **Flat-file export** — write query results directly to CSV or Parquet files
 - **DuckDB export** — local data warehousing with relational schema
 - **16 endpoints**: categories, customers, discounts, devices, employees, inventory, items, merchant, modifiers, receipts, shifts, stores, suppliers, taxes, webhooks, variants
@@ -19,6 +20,7 @@ The SDK provides:
 **`src/loyverse_sdk/`** contains:
 - `client.py` - Main `LoyverseClient` class with endpoint access
 - `cli/` - Typer-based command-line interface with 8 subcommands
+- `mcp/` - FastMCP server with 18 read-only tools for LLM clients
 - `endpoints/` - Endpoint classes using mixin pattern for CRUD operations
 - `models/` - Pydantic models for request/response validation
 - `exporters/` - Flat-file exporter for CSV and Parquet output
@@ -29,11 +31,17 @@ The SDK provides:
 ## Installation
 
 ```bash
-# Install from PyPI - recommended (default)
+# Core SDK (default)
 uv pip install loyverse_sdk
 
-# Add as a project dependency - recommended for uv projects
-uv add loyverse_sdk 
+# SDK + MCP server
+uv pip install "loyverse_sdk[mcp]"
+
+# Add as a project dependency (uv)
+uv add loyverse_sdk
+
+# With MCP extras
+uv add "loyverse_sdk[mcp]"
 
 # Install from GitHub
 uv pip install git+https://github.com/dagsdags212/loyverse_sdk.git
@@ -41,27 +49,30 @@ uv pip install git+https://github.com/dagsdags212/loyverse_sdk.git
 
 ## Setup
 
-Set your API token as an environment variable:
+Set your API token and database path as environment variables:
 
 ```bash
 export LOYVERSE_API_TOKEN=your_api_token
+export LOYVERSE_DB_PATH=loyverse.db          # optional, defaults to loyverse.db
 ```
 
 Or create a `.env` file in your project root:
 
 ```env
 LOYVERSE_API_TOKEN=your_api_token
+LOYVERSE_DB_PATH=loyverse.db                 # optional, defaults to loyverse.db
 ```
 
-Or set it up via the CLI:
+Or use the interactive setup command:
 
 ```bash
 loyverse init
+loyverse init --db-path mydata.duckdb        # set a custom database path
 ```
 
 ## CLI Usage
 
-The `loyverse` CLI provides quick terminal access to the Loyverse API without writing Python code.
+The `loyverse` CLI provides quick terminal access to the Loyverse API without writing Python code. The database path (`--db-path`/`-d`) is optional for `export` and `analytics` commands — it defaults to the `LOYVERSE_DB_PATH` env var or `loyverse.db`.
 
 ```bash
 # List resources with output formats
@@ -81,13 +92,121 @@ loyverse delete categories <ID> --yes
 loyverse get customers <ID>
 loyverse get receipts <ID> --format table
 
-# Export to DuckDB for analytics
-loyverse export --db-path loyverse.duckdb
-loyverse export --db-path loyverse.duckdb --resource receipts
+# Export to DuckDB for analytics (uses LOYVERSE_DB_PATH by default)
+loyverse export
+loyverse export mydata.duckdb --resource receipts
+loyverse export --created-at-min 2024-01-01
+
+# Analytics queries (no --db-path needed if LOYVERSE_DB_PATH is set)
+loyverse analytics revenue --days 30
+loyverse analytics revenue --by-month --days 365
+loyverse analytics products --top-n 10
+loyverse analytics customers --rfm
+loyverse analytics time-series --monthly
 
 # List available endpoints
 loyverse endpoints
 ```
+
+## MCP Server
+
+The `loyverse-mcp` server exposes your Loyverse data as MCP tools, letting LLM clients like [Claude Desktop](https://claude.ai/download) query your POS data in natural language — no code required.
+
+### Installation
+
+The MCP server requires the `mcp` extra:
+
+```bash
+pip install "loyverse_sdk[mcp]"
+```
+
+### Claude Desktop Setup
+
+Add the server to `~/.config/claude/claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "loyverse": {
+      "command": "loyverse-mcp",
+      "env": {
+        "LOYVERSE_API_TOKEN": "your_api_token_here",
+        "LOYVERSE_DB_PATH": "loyverse.db"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop. You should see a hammer icon (🔨) in the chat toolbar indicating tools are available.
+
+### Available Tools
+
+The server registers **18 read-only tools**:
+
+| Tool | Description |
+|------|-------------|
+| `loyverse_list_receipts` | List sales receipts with date, store, and receipt-number filters |
+| `loyverse_get_receipt` | Retrieve a single receipt by UUID |
+| `loyverse_list_items` | List catalog items, filterable by store, category, or IDs |
+| `loyverse_get_item` | Retrieve a single item by UUID |
+| `loyverse_list_customers` | List customers, searchable by email or IDs |
+| `loyverse_get_customer` | Retrieve a single customer by UUID |
+| `loyverse_list_categories` | List all item categories |
+| `loyverse_get_category` | Retrieve a single category by UUID |
+| `loyverse_list_employees` | List all employees |
+| `loyverse_get_employee` | Retrieve a single employee by UUID |
+| `loyverse_list_shifts` | List employee work shifts |
+| `loyverse_get_shift` | Retrieve a single shift by UUID |
+| `loyverse_list_stores` | List all store locations |
+| `loyverse_get_store` | Retrieve a single store by UUID |
+| `loyverse_list_inventory` | List inventory levels, filterable by store or variant |
+| `loyverse_list_payment_types` | List configured payment methods |
+| `loyverse_get_payment_type` | Retrieve a single payment type by ID |
+| `loyverse_get_merchant` | Retrieve the merchant account profile |
+
+All list tools support cursor-based pagination via `limit` and `cursor` parameters, and most support date-range filtering (`created_at_min`, `created_at_max`, `updated_at_min`, `updated_at_max`).
+
+### Example Prompts
+
+Once connected, you can ask Claude things like:
+
+```
+"Show me all receipts from this week"
+"Which items are in the Drinks category?"
+"How many customers do we have?"
+"What payment methods are configured?"
+"List all stores and their details"
+"Find receipts from store <UUID> in January 2024"
+"Get the details for receipt R-1042"
+"Show me the current inventory for store <UUID>"
+```
+
+Claude will call the appropriate tools, paginate through results as needed, and summarize the data in plain language.
+
+### Running Standalone
+
+You can also run the server directly outside of Claude Desktop (for example, to connect it to another MCP client or to test it):
+
+```bash
+LOYVERSE_API_TOKEN=your_token loyverse-mcp
+```
+
+To enable analytics tools, set the database path:
+
+```bash
+LOYVERSE_API_TOKEN=your_token LOYVERSE_DB_PATH=loyverse.db loyverse-mcp
+```
+
+Or as a Python module:
+
+```bash
+LOYVERSE_API_TOKEN=your_token python -m loyverse_sdk.mcp
+```
+
+The server communicates over stdio using the MCP protocol.
+
+---
 
 ## Quick Start
 
@@ -500,6 +619,8 @@ python examples/export_flat_files.py
 ## DuckDB Export
 
 The SDK includes powerful export functionality to save all your Loyverse data to a local DuckDB database for analytics, reporting, and data warehousing.
+
+The `loyverse export` CLI command and `export_to_duckdb()` method use the configured database path from `LOYVERSE_DB_PATH` (default: `loyverse.db`) unless overridden.
 
 ### Why DuckDB?
 

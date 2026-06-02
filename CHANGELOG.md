@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0] — 2026-05-31
+
+### Added
+- `LOYVERSE_DB_PATH` config setting (default: `loyverse.db`) for automatic database path resolution
+- `loyverse init` now prompts for database path in addition to API token
+- `--by-month` flag on `loyverse analytics revenue` and `loyverse_analytics_total_revenue` MCP tool
+
+### Changed
+- `--db-path`/`-d` is now optional on all `loyverse analytics` and `loyverse export` commands — falls back to `LOYVERSE_DB_PATH` config
+- MCP server uses `Config` class instead of raw `os.environ` for database path
+
 ## [0.3.0] — 2026-05-31
 
 ### Added
