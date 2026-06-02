@@ -208,18 +208,13 @@ class TestTableStructure:
         column_names = [col[1] for col in columns]
 
         expected_columns = [
-            "id",
             "receipt_number",
             "receipt_type",
-            "receipt_date",
-            "total_amount",
+            "total_money",
             "customer_id",
             "employee_id",
             "store_id",
             "pos_device_id",
-            "payment_type_id",
-            "created_at",
-            "updated_at",
         ]
 
         for col in expected_columns:
@@ -238,10 +233,7 @@ class TestTableStructure:
             "id",
             "receipt_id",
             "item_id",
-            "variant_id",
-            "name",
-            "sku",
-            "cost",
+            "item_name",
             "quantity",
             "price",
         ]
@@ -298,14 +290,12 @@ class TestForeignKeys:
         # Insert receipt with valid foreign keys
         conn.execute("""
             INSERT INTO receipts (
-                id, receipt_number, receipt_type, receipt_date,
-                total_amount, employee_id, store_id, pos_device_id,
-                payment_type_id, created_at, updated_at
+                receipt_number, receipt_type,
+                total_money, employee_id, store_id, pos_device_id
             )
             VALUES (
-                'rec1', '001', 'SALE', CURRENT_TIMESTAMP,
-                100.0, 'emp1', 'store1', 'dev1',
-                'pay1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                '001', 'SALE',
+                100.0, 'emp1', 'store1', 'dev1'
             )
         """)
 
@@ -342,14 +332,12 @@ class TestForeignKeys:
 
         conn.execute("""
             INSERT INTO receipts (
-                id, receipt_number, receipt_type, receipt_date,
-                total_amount, employee_id, store_id, pos_device_id,
-                payment_type_id, created_at, updated_at
+                receipt_number, receipt_type,
+                total_money, employee_id, store_id, pos_device_id
             )
             VALUES (
-                'rec1', '001', 'SALE', CURRENT_TIMESTAMP,
-                100.0, 'emp1', 'store1', 'dev1',
-                'pay1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                '001', 'SALE',
+                100.0, 'emp1', 'store1', 'dev1'
             )
         """)
 
@@ -368,10 +356,10 @@ class TestForeignKeys:
         # Insert line item
         conn.execute("""
             INSERT INTO receipt_line_items (
-                id, receipt_id, item_id, variant_id, name, quantity, price, cost
+                id, receipt_id, item_id, item_name, quantity, price, total_money
             )
             VALUES (
-                'line1', 'rec1', 'item1', 'variant1', 'Test Item', 1, 100.0, 50.0
+                'line1', '001', 'item1', 'Test Item', 1, 100.0, 100.0
             )
         """)
 

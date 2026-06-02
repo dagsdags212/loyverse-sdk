@@ -250,14 +250,12 @@ async def test_child_table_relationships(temp_db):
     # Insert receipt
     conn.execute("""
         INSERT INTO receipts (
-            id, receipt_number, receipt_type, receipt_date,
-            total_amount, employee_id, store_id, pos_device_id,
-            payment_type_id, created_at, updated_at
+            receipt_number, receipt_type,
+            total_money, employee_id, store_id, pos_device_id
         )
         VALUES (
-            'rec1', '001', 'SALE', CURRENT_TIMESTAMP,
-            150.0, 'emp1', 'store1', 'dev1',
-            'pay1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            '001', 'SALE',
+            150.0, 'emp1', 'store1', 'dev1'
         )
     """)
 
@@ -280,19 +278,19 @@ async def test_child_table_relationships(temp_db):
     # Insert line items
     conn.execute("""
         INSERT INTO receipt_line_items (
-            id, receipt_id, item_id, variant_id, name, quantity, price, cost
+            id, receipt_id, item_id, item_name, quantity, price, total_money
         )
         VALUES
-            ('line1', 'rec1', 'item1', 'variant1', 'Coffee', 2, 10.0, 5.0),
-            ('line2', 'rec1', 'item1', 'variant2', 'Tea', 1, 8.0, 4.0)
+            ('line1', '001', 'item1', 'Coffee', 2, 10.0, 20.0),
+            ('line2', '001', 'item1', 'Tea', 1, 8.0, 8.0)
     """)
 
     # Verify parent-child relationship via JOIN
     results = conn.execute("""
-        SELECT r.receipt_number, l.name, l.quantity, l.price
+        SELECT r.receipt_number, l.item_name, l.quantity, l.price
         FROM receipts r
-        JOIN receipt_line_items l ON r.id = l.receipt_id
-        WHERE r.id = 'rec1'
+        JOIN receipt_line_items l ON r.receipt_number = l.receipt_id
+        WHERE r.receipt_number = '001'
         ORDER BY l.price DESC
     """).fetchall()
 

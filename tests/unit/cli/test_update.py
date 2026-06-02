@@ -23,12 +23,14 @@ def _make_fake_run_async(mocker):
 
 class TestUpdateCommandValidation:
     def test_rejects_unknown_resource(self):
-        result = runner.invoke(app, ["update", "employees", "some-id", "--name", "New"])
+        result = runner.invoke(
+            app, ["api", "update", "employees", "some-id", "--name", "New"]
+        )
         assert result.exit_code == 1
         assert "Cannot update" in result.stdout
 
     def test_rejects_no_fields(self):
-        result = runner.invoke(app, ["update", "categories", "some-id"])
+        result = runner.invoke(app, ["api", "update", "categories", "some-id"])
         assert result.exit_code == 1
         assert "No update fields provided" in result.stdout
 
@@ -37,7 +39,7 @@ class TestUpdateCommandValidation:
         with mock.patch("loyverse_sdk.cli.commands.update.run_async", fake):
             result = runner.invoke(
                 app,
-                ["update", "categories", "abc-123", "--name", "NewName"],
+                ["api", "update", "categories", "abc-123", "--name", "NewName"],
                 input="n\n",
             )
         assert result.exit_code == 0
@@ -50,6 +52,7 @@ class TestUpdateCommandValidation:
             result = runner.invoke(
                 app,
                 [
+                    "api",
                     "update",
                     "categories",
                     "abc-123",

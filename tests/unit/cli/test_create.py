@@ -17,22 +17,22 @@ def mock_run_async():
 
 class TestCreateCommandValidation:
     def test_rejects_unknown_resource(self):
-        result = runner.invoke(app, ["create", "merchant"])
+        result = runner.invoke(app, ["api", "create", "merchant"])
         assert result.exit_code == 1
         assert "Cannot create" in result.stdout
 
     def test_rejects_missing_required_fields(self):
-        result = runner.invoke(app, ["create", "categories"])
+        result = runner.invoke(app, ["api", "create", "categories"])
         assert result.exit_code == 1
         assert "Missing required fields" in result.stdout
         assert "--name" in result.stdout
 
     def test_accepts_required_fields(self, mock_run_async):
-        result = runner.invoke(app, ["create", "categories", "--name", "Drinks"])
+        result = runner.invoke(app, ["api", "create", "categories", "--name", "Drinks"])
         assert result.exit_code == 0
 
     def test_rejects_categories_without_name(self):
-        result = runner.invoke(app, ["create", "categories", "--color", "GREEN"])
+        result = runner.invoke(app, ["api", "create", "categories", "--color", "GREEN"])
         assert result.exit_code == 1
         assert "Missing required fields" in result.stdout
 
@@ -40,6 +40,7 @@ class TestCreateCommandValidation:
         result = runner.invoke(
             app,
             [
+                "api",
                 "create",
                 "taxes",
                 "--type",

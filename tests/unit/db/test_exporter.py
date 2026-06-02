@@ -124,28 +124,24 @@ class TestExportResource:
 
     @pytest.mark.asyncio
     async def test_export_resource_passes_date_filters(self, exporter, mock_client):
-        """Test that date filters are passed to iter_all."""
+        """Test that date filters are passed to iter_all via Query object."""
         created_min = datetime(2024, 1, 1)
         created_max = datetime(2024, 12, 31)
-
         # Track if iter_all was called with correct args
         iter_all_called = False
-        iter_all_kwargs = {}
+        captured_query = None
 
-        async def mock_iter_all(*args, **kwargs):
-            nonlocal iter_all_called, iter_all_kwargs
+        async def mock_iter_all(*args, query=None, **kwargs):
+            nonlocal iter_all_called, captured_query
             iter_all_called = True
-            iter_all_kwargs = kwargs
+            captured_query = query
             return
             yield  # Make it a generator
 
         mock_endpoint = Mock()
         mock_endpoint.iter_all = mock_iter_all
-
         mock_client.endpoints = {"categories": mock_endpoint}
-
         exporter.init_schema()
-
         await exporter.export_resource(
             "categories",
             created_at_min=created_min,
@@ -153,8 +149,9 @@ class TestExportResource:
         )
 
         assert iter_all_called
-        assert iter_all_kwargs["created_at_min"] == created_min
-        assert iter_all_kwargs["created_at_max"] == created_max
+        assert captured_query is not None
+        assert captured_query.created_at_min == created_min
+        assert captured_query.created_at_max == created_max
 
     @pytest.mark.asyncio
     async def test_export_resource_handles_merchant_special_case(
@@ -263,9 +260,9 @@ class TestExportAll:
 
     @pytest.mark.asyncio
     async def test_export_all_initializes_schema_if_needed(self, exporter, mock_client):
-        """Test that export_all initializes schema if tables don't exist."""
-        # Initialize schema first so the DB file exists
-        exporter.init_schema()
+        """Test that export_all initializes schema when database doesn't exist."""
+        # Ensure database file doesn't exist
+        assert not os.path.exists(exporter.db_path)
 
         # Set up mock endpoint so export_resource doesn't fail
         async def empty_iter_all(*args, **kwargs):
@@ -276,10 +273,18 @@ class TestExportAll:
         mock_endpoint.iter_all = empty_iter_all
         mock_client.endpoints = {"categories": mock_endpoint}
 
+        # Export should create the database and schema
         counts = await exporter.export_all(resources=["categories"])
 
-        # Verify database file exists
+        # Verify database file was created
         assert os.path.exists(exporter.db_path)
+
+        # Verify schema was created (table exists)
+        conn = exporter.connection.connect()
+        tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        table_names = [t[0] for t in tables]
+        assert "categories" in table_names
+        conn.close()
 
     @pytest.mark.asyncio
     async def test_export_all_exports_selected_resources(self, exporter, mock_client):
@@ -590,45 +595,24 @@ class TestBatchInsert:
         batch = [
             (
                 {
-                    "id": "rec1",
                     "receipt_number": "001",
-                    "note": None,
                     "receipt_type": "SALE",
-                    "refund_for": None,
-                    "order": None,
-                    "receipt_date": datetime.now(),
-                    "source": None,
-                    "total_amount": 100.0,
-                    "total_tax": 0.0,
-                    "points_earned": 0.0,
-                    "points_deducted": 0.0,
-                    "points_balance": 0.0,
-                    "total_discount": 0.0,
-                    "customer_id": None,
+                    "total_money": 100.0,
                     "employee_id": "emp1",
                     "store_id": "store1",
                     "pos_device_id": "dev1",
-                    "payment_type_id": "pay1",
-                    "surcharge": 0.0,
-                    "tip": 0.0,
-                    "cancelled_at": None,
-                    "created_at": datetime.now(),
-                    "updated_at": datetime.now(),
-                    "deleted_at": None,
                 },
                 {},
                 {
                     "receipt_line_items": [
                         {
                             "id": "line1",
-                            "receipt_id": "rec1",
+                            "receipt_id": "001",
                             "item_id": "item1",
-                            "variant_id": "variant1",
-                            "name": "Item 1",
-                            "sku": None,
-                            "quantity": 1,
+                            "item_name": "Item 1",
+                            "quantity": 1.0,
                             "price": 100.0,
-                            "cost": 50.0,
+                            "total_money": 100.0,
                         }
                     ]
                 },
@@ -647,45 +631,24 @@ class TestBatchInsert:
         batch2 = [
             (
                 {
-                    "id": "rec2",
                     "receipt_number": "002",
-                    "note": None,
                     "receipt_type": "SALE",
-                    "refund_for": None,
-                    "order": None,
-                    "receipt_date": datetime.now(),
-                    "source": None,
-                    "total_amount": 200.0,
-                    "total_tax": 0.0,
-                    "points_earned": 0.0,
-                    "points_deducted": 0.0,
-                    "points_balance": 0.0,
-                    "total_discount": 0.0,
-                    "customer_id": None,
+                    "total_money": 200.0,
                     "employee_id": "emp1",
                     "store_id": "store1",
                     "pos_device_id": "dev1",
-                    "payment_type_id": "pay1",
-                    "surcharge": 0.0,
-                    "tip": 0.0,
-                    "cancelled_at": None,
-                    "created_at": datetime.now(),
-                    "updated_at": datetime.now(),
-                    "deleted_at": None,
                 },
                 {},
                 {
                     "receipt_line_items": [
                         {
                             "id": "line2",
-                            "receipt_id": "rec2",
+                            "receipt_id": "002",
                             "item_id": "item1",
-                            "variant_id": "variant1",
-                            "name": "Item 1",
-                            "sku": None,
-                            "quantity": 2,
+                            "item_name": "Item 1",
+                            "quantity": 2.0,
                             "price": 100.0,
-                            "cost": 50.0,
+                            "total_money": 200.0,
                         }
                     ]
                 },

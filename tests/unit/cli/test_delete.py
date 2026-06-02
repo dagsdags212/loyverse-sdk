@@ -34,7 +34,7 @@ def _make_fake_run_async(mocker, endpoint_retrieve_return=None):
 
 class TestDeleteCommandValidation:
     def test_rejects_unknown_resource(self):
-        result = runner.invoke(app, ["delete", "employees", "some-id"])
+        result = runner.invoke(app, ["api", "delete", "employees", "some-id"])
         assert result.exit_code == 1
         assert "Cannot delete" in result.stdout
 
@@ -44,7 +44,7 @@ class TestDeleteCommandValidation:
         )
         with mock.patch("loyverse_sdk.cli.commands.delete.run_async", fake):
             result = runner.invoke(
-                app, ["delete", "categories", "abc-123"], input="n\n"
+                app, ["api", "delete", "categories", "abc-123"], input="n\n"
             )
         assert result.exit_code == 0
         assert "Cancelled" in result.stdout
@@ -52,7 +52,7 @@ class TestDeleteCommandValidation:
     def test_skips_confirmation_with_yes(self, mocker):
         fake = _make_fake_run_async(mocker)
         with mock.patch("loyverse_sdk.cli.commands.delete.run_async", fake):
-            result = runner.invoke(app, ["delete", "categories", "abc-123", "--yes"])
+            result = runner.invoke(app, ["api", "delete", "categories", "abc-123", "--yes"])
         assert result.exit_code == 0
 
     def test_deletable_includes_expected(self):

@@ -25,23 +25,23 @@ def clean_env_file():
 
 class TestInitCommand:
     def test_init_creates_env_file(self, clean_env_file):
-        result = runner.invoke(app, ["init"], input="test-token-123\n")
+        result = runner.invoke(app, ["init"], input="test-token-123\n\n")
         assert result.exit_code == 0
         assert Path(".env").exists()
         content = Path(".env").read_text()
         assert "LOYVERSE_API_TOKEN=test-token-123" in content
+        assert "LOYVERSE_DB_PATH=" in content
 
     def test_init_overwrites_existing(self, clean_env_file):
         Path(".env").write_text("LOYVERSE_API_TOKEN=old-token\n")
-        # confirm overwrite: "y" then the new token
-        result = runner.invoke(app, ["init"], input="y\nnew-token\n")
+        result = runner.invoke(app, ["init"], input="y\nnew-token\n\n")
         assert result.exit_code == 0
         content = Path(".env").read_text()
         assert "LOYVERSE_API_TOKEN=new-token" in content
 
     def test_init_keeps_existing_on_no(self, clean_env_file):
         Path(".env").write_text("LOYVERSE_API_TOKEN=old-token\n")
-        result = runner.invoke(app, ["init"], input="n\n")
+        result = runner.invoke(app, ["init"], input="n\n\n")
         assert result.exit_code == 0
         content = Path(".env").read_text()
         assert "LOYVERSE_API_TOKEN=old-token" in content

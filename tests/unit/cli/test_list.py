@@ -17,32 +17,33 @@ def mock_run_async():
 
 class TestListCommandValidation:
     def test_rejects_unknown_resource(self):
-        result = runner.invoke(app, ["list", "unknown"])
+        result = runner.invoke(app, ["api", "list", "unknown"])
         assert result.exit_code == 1
         assert "Unknown resource" in result.stdout
 
     def test_rejects_invalid_format(self):
-        result = runner.invoke(app, ["list", "categories", "--format", "xml"])
+        result = runner.invoke(app, ["api", "list", "categories", "--format", "xml"])
         assert result.exit_code == 1
         assert "Invalid --format" in result.stdout
 
     def test_accepts_valid_resource(self, mock_run_async):
-        result = runner.invoke(app, ["list", "categories"])
+        result = runner.invoke(app, ["api", "list", "categories"])
         assert result.exit_code == 0
 
     def test_accepts_all_formats(self, mock_run_async):
         for fmt in ("json", "table", "csv", "parquet"):
-            result = runner.invoke(app, ["list", "categories", "--format", fmt])
+            result = runner.invoke(app, ["api", "list", "categories", "--format", fmt])
             assert result.exit_code == 0
 
     def test_accepts_limit(self, mock_run_async):
-        result = runner.invoke(app, ["list", "categories", "--limit", "10"])
+        result = runner.invoke(app, ["api", "list", "categories", "--limit", "10"])
         assert result.exit_code == 0
 
     def test_accepts_date_filters(self, mock_run_async):
         result = runner.invoke(
             app,
             [
+                "api",
                 "list",
                 "receipts",
                 "--created-at-min",

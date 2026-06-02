@@ -175,28 +175,23 @@ class TestSplitNestedData:
     def test_split_receipts_extracts_line_items(self):
         """Test that receipt line_items are extracted to child table."""
         data = {
-            "id": "rec1",
             "receipt_number": "001",
             "line_items": [
                 {
                     "id": "line1",
                     "item_id": "item1",
-                    "variant_id": "var1",
-                    "name": "Coffee",
+                    "item_name": "Coffee",
                     "sku": "COF001",
                     "quantity": 2,
                     "price": 5.0,
-                    "cost": 2.5,
                 },
                 {
                     "id": "line2",
                     "item_id": "item2",
-                    "variant_id": "var2",
-                    "name": "Tea",
+                    "item_name": "Tea",
                     "sku": "TEA001",
                     "quantity": 1,
                     "price": 3.0,
-                    "cost": 1.5,
                 },
             ],
         }
@@ -210,8 +205,9 @@ class TestSplitNestedData:
         # Verify line item structure
         line1 = child["receipt_line_items"][0]
         assert line1["id"] == "line1"
-        assert line1["receipt_id"] == "rec1"
+        assert line1["receipt_id"] == "001"
         assert line1["item_id"] == "item1"
+        assert line1["item_name"] == "Coffee"
         assert line1["quantity"] == 2
         assert line1["price"] == 5.0
 
@@ -228,19 +224,6 @@ class TestSplitNestedData:
 
         assert "total_discounts" not in main
         assert "total_taxes" not in main
-
-    def test_split_receipts_handles_payment_type_id_list(self):
-        """Test that payment_type_id list is converted to single value."""
-        data = {
-            "id": "rec1",
-            "receipt_number": "001",
-            "payment_type_id": ["pay1", "pay2"],
-        }
-
-        main, junction, child = split_nested_data("receipts", data)
-
-        # Should take first payment type
-        assert main["payment_type_id"] == "pay1"
 
     def test_split_modifiers_extracts_options(self):
         """Test that modifier options are extracted to child table."""
