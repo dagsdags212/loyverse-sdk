@@ -53,3 +53,32 @@ def build_table(items: list[Any], max_cols: int = 7) -> Table:
                 row.append(s[:72] + ("\u2026" if len(s) > 72 else ""))
         table.add_row(*row)
     return table
+
+
+def build_table_from_dicts(
+    rows: list[dict[str, Any]],
+    title: str = "Results",
+    max_cols: int = 8,
+) -> Table:
+    """Build a Rich table from a list of plain dictionaries."""
+    if not rows:
+        return Table(title="(empty)")
+
+    cols = list(rows[0].keys())[:max_cols]
+    label = f" ({len(rows)} record{'s' if len(rows) != 1 else ''})"
+    table = Table(title=f"{title}{label}", header_style="bold cyan")
+    for c in cols:
+        width = min(max(len(c), 10), 24)
+        table.add_column(c, width=width)
+
+    for row in rows:
+        cells: list[str] = []
+        for c in cols:
+            val = row.get(c)
+            if val is None:
+                cells.append("\u2014")
+            else:
+                s = str(val)
+                cells.append(s[:72] + ("\u2026" if len(s) > 72 else ""))
+        table.add_row(*cells)
+    return table
