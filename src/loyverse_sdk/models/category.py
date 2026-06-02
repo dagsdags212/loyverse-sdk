@@ -35,6 +35,7 @@ class BaseCategory(BaseModel):
 
 class Category(BaseCategory):
     created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
     deleted_at: datetime | None = None
 
 

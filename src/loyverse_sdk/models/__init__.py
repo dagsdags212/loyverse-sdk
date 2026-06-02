@@ -1,4 +1,3 @@
-from loyverse_sdk.models.common import BaseListQuery
 from loyverse_sdk.models.category import (
     Category,
     CategoryListQuery,
@@ -9,13 +8,15 @@ from loyverse_sdk.models.discount import (
     DiscountListQuery,
     DiscountListResponse,
 )
-from loyverse_sdk.models.user import (
-    Customer,
-    CustomerListQuery,
-    CustomerListResponse,
+from loyverse_sdk.models.employee import (
     Employee,
     EmployeeListQuery,
     EmployeeListResponse,
+)
+from loyverse_sdk.models.customer import (
+    Customer,
+    CustomerListQuery,
+    CustomerListResponse,
 )
 from loyverse_sdk.models.merchant import Merchant
 from loyverse_sdk.models.receipt import (
@@ -53,6 +54,7 @@ from loyverse_sdk.models.inventory import (
 )
 from loyverse_sdk.models.shift import (
     Shift,
+    ShiftListQuery,
     ShiftListResponse,
 )
 from loyverse_sdk.models.supplier import (
