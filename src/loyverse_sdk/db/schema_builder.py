@@ -10,6 +10,8 @@ from typing import Optional
 from sqlmodel import SQLModel, Field
 import duckdb
 
+from loyverse_sdk.core.console import console
+
 
 # ============================================================================
 # MAIN RESOURCE TABLES
@@ -230,30 +232,44 @@ class VariantDB(SQLModel, table=True):
     deleted_at: Optional[datetime] = None
 
 
+class WebhookDB(SQLModel, table=True):
+    """Webhook registrations"""
+
+    __tablename__ = "webhooks"
+
+    id: str = Field(primary_key=True)
+    merchant_id: str
+    url: str
+    type: str
+    status: str = "ENABLED"
+    created_at: datetime
+    updated_at: datetime
+
+
 class ReceiptDB(SQLModel, table=True):
     """Sales receipts/transactions"""
 
     __tablename__ = "receipts"
 
-    id: str = Field(primary_key=True)
-    receipt_number: str
+    id: Optional[str] = None
+    receipt_number: str = Field(primary_key=True)
     note: Optional[str] = None
     receipt_type: str
     refund_for: Optional[str] = None
-    order: Optional[str] = None
+    order_id: Optional[str] = None
     receipt_date: datetime
     source: Optional[str] = None
-    total_amount: float
+    total_money: float
     total_tax: float = 0.0
     points_earned: float = 0.0
     points_deducted: float = 0.0
     points_balance: float = 0.0
     total_discount: float = 0.0
     customer_id: Optional[str] = Field(default=None, foreign_key="customers.id")
-    employee_id: str = Field(foreign_key="employees.id")
-    store_id: str = Field(foreign_key="stores.id")
-    pos_device_id: str = Field(foreign_key="pos_devices.id")
-    payment_type_id: Optional[str] = Field(default=None, foreign_key="payment_types.id")
+    employee_id: Optional[str] = Field(default=None, foreign_key="employees.id")
+    store_id: Optional[str] = Field(default=None, foreign_key="stores.id")
+    pos_device_id: Optional[str] = Field(default=None, foreign_key="pos_devices.id")
+    dining_option: Optional[str] = None
     surcharge: float = 0.0
     tip: float = 0.0
     cancelled_at: Optional[datetime] = None
@@ -311,6 +327,9 @@ class ShiftDB(SQLModel, table=True):
     net_sales: float = 0.0
     tip: float = 0.0
     surcharge: float = 0.0
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: datetime | None = None
 
 
 class ShiftTaxDB(SQLModel, table=True):
@@ -439,14 +458,20 @@ class ReceiptLineItemDB(SQLModel, table=True):
     __tablename__ = "receipt_line_items"
 
     id: str = Field(primary_key=True)
-    receipt_id: str = Field(foreign_key="receipts.id")
+    receipt_id: str = Field(foreign_key="receipts.receipt_number")
     item_id: str = Field(foreign_key="items.id")
-    variant_id: str = Field(foreign_key="variants.id")
-    name: str
+    variant_id: Optional[str] = Field(default=None, foreign_key="variants.id")
+    item_name: str
+    variant_name: Optional[str] = None
     sku: Optional[str] = None
-    cost: float
-    quantity: int
+    quantity: float
     price: float
+    gross_total_money: float = 0.0
+    total_money: float
+    cost: Optional[float] = None
+    cost_total: Optional[float] = None
+    line_note: Optional[str] = None
+    total_discount: float = 0.0
 
 
 class ModifierOptionDB(SQLModel, table=True):
@@ -505,6 +530,9 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
                 "sync_metadata",
                 "modifier_options",
                 "receipt_line_items",
+                "shift_cash_movements",
+                "shift_payments",
+                "shift_taxes",
                 "variant_store",
                 "payment_type_store",
                 "discount_store",
@@ -516,6 +544,7 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
                 "inventory",
                 "shifts",
                 "merchant",
+                "webhooks",
                 "receipts",
                 "variants",
                 "items",
@@ -668,8 +697,7 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
                 name TEXT NOT NULL,
                 store_id TEXT NOT NULL,
                 activated BOOLEAN NOT NULL DEFAULT TRUE,
-                deleted_at TIMESTAMP,
-                FOREIGN KEY (store_id) REFERENCES stores(id)
+                deleted_at TIMESTAMP
             )
         """)
 
@@ -705,9 +733,7 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
                 option3_name TEXT,
                 created_at TIMESTAMP NOT NULL,
                 updated_at TIMESTAMP NOT NULL,
-                deleted_at TIMESTAMP,
-                FOREIGN KEY (category_id) REFERENCES categories(id),
-                FOREIGN KEY (primary_supplier_id) REFERENCES suppliers(id)
+                deleted_at TIMESTAMP
             )
         """)
 
@@ -727,43 +753,37 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
                 default_price DOUBLE,
                 created_at TIMESTAMP NOT NULL,
                 updated_at TIMESTAMP NOT NULL,
-                deleted_at TIMESTAMP,
-                FOREIGN KEY (item_id) REFERENCES items(id)
+                deleted_at TIMESTAMP
             )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS receipts (
-                id TEXT PRIMARY KEY,
-                receipt_number TEXT NOT NULL,
+                id TEXT,
+                receipt_number TEXT PRIMARY KEY,
                 note TEXT,
                 receipt_type TEXT NOT NULL,
                 refund_for TEXT,
-                "order" TEXT,
-                receipt_date TIMESTAMP NOT NULL,
+                order_id TEXT,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                deleted_at TIMESTAMP,
                 source TEXT,
-                total_amount DOUBLE NOT NULL,
+                receipt_date TIMESTAMP,
+                cancelled_at TIMESTAMP,
+                total_money DOUBLE NOT NULL,
                 total_tax DOUBLE NOT NULL DEFAULT 0.0,
                 points_earned DOUBLE NOT NULL DEFAULT 0.0,
                 points_deducted DOUBLE NOT NULL DEFAULT 0.0,
                 points_balance DOUBLE NOT NULL DEFAULT 0.0,
                 total_discount DOUBLE NOT NULL DEFAULT 0.0,
                 customer_id TEXT,
-                employee_id TEXT NOT NULL,
-                store_id TEXT NOT NULL,
-                pos_device_id TEXT NOT NULL,
-                payment_type_id TEXT,
-                surcharge DOUBLE NOT NULL DEFAULT 0.0,
+                employee_id TEXT,
+                store_id TEXT,
+                pos_device_id TEXT,
+                dining_option TEXT,
                 tip DOUBLE NOT NULL DEFAULT 0.0,
-                cancelled_at TIMESTAMP,
-                created_at TIMESTAMP NOT NULL,
-                updated_at TIMESTAMP NOT NULL,
-                deleted_at TIMESTAMP,
-                FOREIGN KEY (customer_id) REFERENCES customers(id),
-                FOREIGN KEY (employee_id) REFERENCES employees(id),
-                FOREIGN KEY (store_id) REFERENCES stores(id),
-                FOREIGN KEY (pos_device_id) REFERENCES pos_devices(id),
-                FOREIGN KEY (payment_type_id) REFERENCES payment_types(id)
+                surcharge DOUBLE NOT NULL DEFAULT 0.0
             )
         """)
 
@@ -784,28 +804,76 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
                 store_id TEXT NOT NULL,
                 in_stock INTEGER NOT NULL DEFAULT 0,
                 updated_at TIMESTAMP NOT NULL,
-                PRIMARY KEY (variant_id, store_id),
-                FOREIGN KEY (variant_id) REFERENCES variants(id),
-                FOREIGN KEY (store_id) REFERENCES stores(id)
+                PRIMARY KEY (variant_id, store_id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS webhooks (
+                id TEXT PRIMARY KEY,
+                merchant_id TEXT NOT NULL,
+                url TEXT NOT NULL,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'ENABLED',
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
             )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS shifts (
                 id TEXT PRIMARY KEY,
-                employee_id TEXT NOT NULL,
-                start_time TIMESTAMP NOT NULL,
-                end_time TIMESTAMP,
-                opening_amount DOUBLE NOT NULL DEFAULT 0.0,
-                closing_amount DOUBLE NOT NULL DEFAULT 0.0,
-                cash_sales DOUBLE NOT NULL DEFAULT 0.0,
-                card_sales DOUBLE NOT NULL DEFAULT 0.0,
-                returned_amount DOUBLE NOT NULL DEFAULT 0.0,
-                status TEXT NOT NULL DEFAULT 'open',
+                store_id TEXT NOT NULL,
+                pos_device_id TEXT NOT NULL,
+                opened_at TIMESTAMP NOT NULL,
+                closed_at TIMESTAMP,
+                opened_by_employee TEXT NOT NULL,
+                closed_by_employee TEXT,
+                starting_cash DOUBLE NOT NULL DEFAULT 0.0,
+                cash_payments DOUBLE NOT NULL DEFAULT 0.0,
+                cash_refunds DOUBLE NOT NULL DEFAULT 0.0,
+                paid_in DOUBLE NOT NULL DEFAULT 0.0,
+                paid_out DOUBLE NOT NULL DEFAULT 0.0,
+                expected_cash DOUBLE NOT NULL DEFAULT 0.0,
+                actual_cash DOUBLE NOT NULL DEFAULT 0.0,
+                gross_sales DOUBLE NOT NULL DEFAULT 0.0,
+                refunds DOUBLE NOT NULL DEFAULT 0.0,
+                discounts DOUBLE NOT NULL DEFAULT 0.0,
+                net_sales DOUBLE NOT NULL DEFAULT 0.0,
+                tip DOUBLE NOT NULL DEFAULT 0.0,
+                surcharge DOUBLE NOT NULL DEFAULT 0.0,
                 created_at TIMESTAMP NOT NULL,
                 updated_at TIMESTAMP NOT NULL,
-                deleted_at TIMESTAMP,
-                FOREIGN KEY (employee_id) REFERENCES employees(id)
+                deleted_at TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS shift_taxes (
+                id TEXT PRIMARY KEY,
+                shift_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                rate DOUBLE NOT NULL,
+                amount DOUBLE NOT NULL
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS shift_payments (
+                id TEXT PRIMARY KEY,
+                shift_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                amount DOUBLE NOT NULL
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS shift_cash_movements (
+                id TEXT PRIMARY KEY,
+                shift_id TEXT NOT NULL,
+                time TIMESTAMP NOT NULL,
+                amount DOUBLE NOT NULL,
+                note TEXT
             )
         """)
 
@@ -814,63 +882,56 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
             CREATE TABLE IF NOT EXISTS employee_store (
                 employee_id TEXT NOT NULL,
                 store_id TEXT NOT NULL,
-                PRIMARY KEY (employee_id, store_id),
-                FOREIGN KEY (employee_id) REFERENCES employees(id),
-                FOREIGN KEY (store_id) REFERENCES stores(id)             )
+                PRIMARY KEY (employee_id, store_id)
+            )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS item_tax (
                 item_id TEXT NOT NULL,
                 tax_id TEXT NOT NULL,
-                PRIMARY KEY (item_id, tax_id),
-                FOREIGN KEY (item_id) REFERENCES items(id),
-                FOREIGN KEY (tax_id) REFERENCES taxes(id)             )
+                PRIMARY KEY (item_id, tax_id)
+            )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS item_modifier (
                 item_id TEXT NOT NULL,
                 modifier_id TEXT NOT NULL,
-                PRIMARY KEY (item_id, modifier_id),
-                FOREIGN KEY (item_id) REFERENCES items(id),
-                FOREIGN KEY (modifier_id) REFERENCES modifiers(id)             )
+                PRIMARY KEY (item_id, modifier_id)
+            )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS modifier_store (
                 modifier_id TEXT NOT NULL,
                 store_id TEXT NOT NULL,
-                PRIMARY KEY (modifier_id, store_id),
-                FOREIGN KEY (modifier_id) REFERENCES modifiers(id),
-                FOREIGN KEY (store_id) REFERENCES stores(id)             )
+                PRIMARY KEY (modifier_id, store_id)
+            )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS tax_store (
                 tax_id TEXT NOT NULL,
                 store_id TEXT NOT NULL,
-                PRIMARY KEY (tax_id, store_id),
-                FOREIGN KEY (tax_id) REFERENCES taxes(id),
-                FOREIGN KEY (store_id) REFERENCES stores(id)             )
+                PRIMARY KEY (tax_id, store_id)
+            )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS discount_store (
                 discount_id TEXT NOT NULL,
                 store_id TEXT NOT NULL,
-                PRIMARY KEY (discount_id, store_id),
-                FOREIGN KEY (discount_id) REFERENCES discounts(id),
-                FOREIGN KEY (store_id) REFERENCES stores(id)             )
+                PRIMARY KEY (discount_id, store_id)
+            )
         """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS payment_type_store (
                 payment_type_id TEXT NOT NULL,
                 store_id TEXT NOT NULL,
-                PRIMARY KEY (payment_type_id, store_id),
-                FOREIGN KEY (payment_type_id) REFERENCES payment_types(id),
-                FOREIGN KEY (store_id) REFERENCES stores(id)             )
+                PRIMARY KEY (payment_type_id, store_id)
+            )
         """)
 
         conn.execute("""
@@ -880,9 +941,8 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
                 available_for_sale BOOLEAN NOT NULL DEFAULT TRUE,
                 optimal_stock DOUBLE,
                 low_stock_threshold DOUBLE,
-                PRIMARY KEY (variant_id, store_id),
-                FOREIGN KEY (variant_id) REFERENCES variants(id),
-                FOREIGN KEY (store_id) REFERENCES stores(id)             )
+                PRIMARY KEY (variant_id, store_id)
+            )
         """)
 
         # Child tables
@@ -891,15 +951,18 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
                 id TEXT PRIMARY KEY,
                 receipt_id TEXT NOT NULL,
                 item_id TEXT NOT NULL,
-                variant_id TEXT NOT NULL,
-                name TEXT NOT NULL,
+                variant_id TEXT,
+                item_name TEXT NOT NULL,
+                variant_name TEXT,
                 sku TEXT,
-                cost DOUBLE NOT NULL,
-                quantity INTEGER NOT NULL,
+                quantity DOUBLE NOT NULL,
                 price DOUBLE NOT NULL,
-                FOREIGN KEY (receipt_id) REFERENCES receipts(id),
-                FOREIGN KEY (item_id) REFERENCES items(id),
-                FOREIGN KEY (variant_id) REFERENCES variants(id)
+                gross_total_money DOUBLE NOT NULL DEFAULT 0.0,
+                total_money DOUBLE NOT NULL,
+                cost DOUBLE,
+                cost_total DOUBLE,
+                line_note TEXT,
+                total_discount DOUBLE NOT NULL DEFAULT 0.0
             )
         """)
 
@@ -912,8 +975,8 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
                 position INTEGER NOT NULL,
                 created_at TIMESTAMP NOT NULL,
                 updated_at TIMESTAMP NOT NULL,
-                deleted_at TIMESTAMP,
-                FOREIGN KEY (modifier_id) REFERENCES modifiers(id)             )
+                deleted_at TIMESTAMP
+            )
         """)
 
         # Metadata table
@@ -926,7 +989,7 @@ def create_duckdb_schema(db_path: str, drop_existing: bool = False) -> None:
             )
         """)
 
-        print(f"✓ Created DuckDB schema at {db_path}")
+        console.log(f"[green]✓[/green] Created DuckDB schema at {db_path}")
 
     finally:
         conn.close()
@@ -1011,7 +1074,7 @@ def create_indexes(db_path: str) -> None:
             "CREATE INDEX IF NOT EXISTS idx_receipts_deleted ON receipts(deleted_at)"
         )
 
-        print(f"✓ Created indexes in {db_path}")
+        console.log(f"[green]✓[/green] Created indexes in {db_path}")
 
     finally:
         conn.close()

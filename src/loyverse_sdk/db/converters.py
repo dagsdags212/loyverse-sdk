@@ -202,11 +202,11 @@ def _split_employees(data: dict) -> tuple[dict, dict[str, list[dict]]]:
 def _split_receipts(data: dict) -> tuple[dict, dict[str, list[dict]]]:
     """
     Split receipt data into main record and child records.
-
     Extracts:
-    - line_items → receipt_line_items child table
+    - line_items -> receipt_line_items child table
     - total_discounts (removed, complex nested array)
     - total_taxes (removed, complex nested array)
+    - payments (removed, complex nested array)
     """
     main_record = data.copy()
     child_records = {}
@@ -215,35 +215,33 @@ def _split_receipts(data: dict) -> tuple[dict, dict[str, list[dict]]]:
     line_items = main_record.pop("line_items", [])
     if line_items:
         child_records["receipt_line_items"] = []
+        receipt_number = main_record.get("receipt_number")
         for item in line_items:
-            # Convert UUIDs to strings
             line_item_record = {
-                "id": str(item.get("id")),
-                "receipt_id": str(main_record["id"]),
-                "item_id": str(item.get("item_id")),
-                "variant_id": str(item.get("variant_id")),
-                "name": item.get("name"),
+                "id": str(item.get("id")) if item.get("id") else None,
+                "receipt_id": receipt_number,
+                "item_id": str(item.get("item_id")) if item.get("item_id") else None,
+                "variant_id": str(item.get("variant_id"))
+                if item.get("variant_id")
+                else None,
+                "item_name": item.get("item_name"),
+                "variant_name": item.get("variant_name"),
                 "sku": item.get("sku"),
-                "cost": item.get("cost", 0.0),
-                "quantity": item.get("quantity", 1),
-                "price": item.get("price", 0.0),
+                "quantity": item.get("quantity"),
+                "price": item.get("price"),
+                "gross_total_money": item.get("gross_total_money", 0.0),
+                "total_money": item.get("total_money"),
+                "cost": item.get("cost"),
+                "cost_total": item.get("cost_total"),
+                "line_note": item.get("line_note"),
+                "total_discount": item.get("total_discount", 0.0),
             }
             child_records["receipt_line_items"].append(line_item_record)
 
-    # Remove complex nested arrays (not in schema)
+    # Remove complex nested arrays
     main_record.pop("total_discounts", None)
     main_record.pop("total_taxes", None)
-
-    # Handle payment_type_id (can be string or UUID)
-    if "payment_type_id" in main_record:
-        payment_id = main_record["payment_type_id"]
-        if isinstance(payment_id, list) and payment_id:
-            # Take first payment type if it's a list
-            main_record["payment_type_id"] = str(payment_id[0])
-        elif payment_id:
-            main_record["payment_type_id"] = str(payment_id)
-        else:
-            main_record["payment_type_id"] = None
+    main_record.pop("payments", None)
 
     return main_record, child_records
 

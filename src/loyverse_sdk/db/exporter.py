@@ -10,10 +10,30 @@ from typing import Callable, Optional
 import duckdb
 import polars as pl
 
+from loyverse_sdk.core.console import console
 from loyverse_sdk.db.schema_builder import create_duckdb_schema, create_indexes
-from loyverse_sdk.db.connection import DuckDBConnection, table_exists
+from loyverse_sdk.db.connection import DuckDBConnection, database_exists
 from loyverse_sdk.db.converters import pydantic_to_sql_dict, split_nested_data
+from loyverse_sdk.db.progress import ExportProgress
 from loyverse_sdk.exceptions import ExportError
+from loyverse_sdk.models import (
+    CategoryListQuery,
+    CustomerListQuery,
+    DiscountListQuery,
+    EmployeeListQuery,
+    InventoryListQuery,
+    ItemListQuery,
+    ModifierListQuery,
+    PaymentTypeListQuery,
+    PosDeviceListQuery,
+    ReceiptListQuery,
+    ShiftListQuery,
+    StoreListQuery,
+    SupplierListQuery,
+    TaxListQuery,
+    VariantListQuery,
+    WebhookListQuery,
+)
 
 
 class DuckDBExporter:
@@ -60,17 +80,22 @@ class DuckDBExporter:
         "inventory",
         # Depends on many (customer, employee, store, device, payment_type)
         "receipts",
+        # Depends on receipt-level metrics
+        "shifts",
+        # Independent (management)
+        "webhooks",
         # Merchant (single record)
         "merchant",
     ]
 
-    def __init__(self, client, db_path: str):
+    def __init__(self, client, db_path: str, show_progress: bool = True):
         """
         Initialize the DuckDB exporter.
 
         Args:
             client: LoyverseClient instance
             db_path: Path to DuckDB database file
+            show_progress: Display real-time progress during export (default: True)
 
         Example:
             from loyverse_sdk import LoyverseClient
@@ -81,6 +106,27 @@ class DuckDBExporter:
         self.client = client
         self.db_path = db_path
         self.connection = DuckDBConnection(db_path)
+        self.show_progress = show_progress
+
+    # Mapping from resource names to their Query classes
+    QUERY_CLASSES: dict[str, type] = {
+        "categories": CategoryListQuery,
+        "customers": CustomerListQuery,
+        "discounts": DiscountListQuery,
+        "employees": EmployeeListQuery,
+        "inventory": InventoryListQuery,
+        "items": ItemListQuery,
+        "modifiers": ModifierListQuery,
+        "payment_types": PaymentTypeListQuery,
+        "pos_devices": PosDeviceListQuery,
+        "receipts": ReceiptListQuery,
+        "stores": StoreListQuery,
+        "suppliers": SupplierListQuery,
+        "taxes": TaxListQuery,
+        "variants": VariantListQuery,
+        "shifts": ShiftListQuery,
+        "webhooks": WebhookListQuery,
+    }
 
     async def export_all(
         self,
@@ -92,6 +138,7 @@ class DuckDBExporter:
         batch_size: int = 1000,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
         create_indexes_after: bool = True,
+        show_progress: Optional[bool] = None,
     ) -> dict[str, int]:
         """
         Export all or selected resources to DuckDB.
@@ -105,6 +152,7 @@ class DuckDBExporter:
             batch_size: Number of records to insert per transaction
             progress_callback: Optional callback(resource_name, current, total)
             create_indexes_after: Create indexes after export completes
+            show_progress: Display real-time progress (overrides instance default)
 
         Returns:
             Dictionary mapping resource names to record counts
@@ -127,8 +175,16 @@ class DuckDBExporter:
                 created_at_min=datetime.now() - timedelta(days=30)
             )
         """
-        # Initialize schema if needed
-        if not table_exists(self.db_path, "categories"):
+        # Determine if progress should be shown
+        use_progress = (
+            show_progress if show_progress is not None else self.show_progress
+        )
+
+        # Initialize schema if database doesn't exist yet
+        schema_is_new = not database_exists(self.db_path)
+        if schema_is_new:
+            if use_progress:
+                console.log("[bold]Initializing DuckDB schema...[/bold]")
             self.init_schema(drop_existing=False)
 
         # Filter resources if specified
@@ -136,10 +192,32 @@ class DuckDBExporter:
         if resources:
             resource_order = [r for r in resource_order if r in resources]
 
+        # Set up progress tracker
+        tracker = ExportProgress(
+            total_resources=len(resource_order),
+            console=console,
+            enabled=use_progress and progress_callback is None,
+        )
+        if tracker.enabled:
+            tracker.start()
+
         # Export each resource in dependency order
         export_counts = {}
+        total_errors = 0
         for resource_name in resource_order:
+            if tracker.enabled:
+                tracker.begin_resource(resource_name)
             try:
+                # Chain the progress tracker into the callback
+                def make_callback(name: str, t: ExportProgress):
+                    def cb(rname: str, current: int, total: int) -> None:
+                        if progress_callback:
+                            progress_callback(rname, current, total)
+                        if t.enabled:
+                            t.update_count(name, current)
+
+                    return cb
+
                 count = await self.export_resource(
                     resource_name,
                     created_at_min=created_at_min,
@@ -147,12 +225,17 @@ class DuckDBExporter:
                     updated_at_min=updated_at_min,
                     updated_at_max=updated_at_max,
                     batch_size=batch_size,
-                    progress_callback=progress_callback,
+                    progress_callback=make_callback(resource_name, tracker),
                 )
                 export_counts[resource_name] = count
+                if tracker.enabled:
+                    tracker.finish_resource(resource_name, count)
             except (ExportError, duckdb.Error) as e:
                 if not isinstance(e, ExportError):
                     e = ExportError(str(e), resource_name=resource_name)
+                total_errors += 1
+                if tracker.enabled:
+                    tracker.error_resource(resource_name, str(e))
                 raise ExportError(
                     f"Failed to export {resource_name}: {e}",
                     resource_name=resource_name,
@@ -161,13 +244,30 @@ class DuckDBExporter:
         # Create indexes if requested
         if create_indexes_after:
             try:
+                if tracker.enabled:
+                    console.log("[dim]Creating indexes...[/dim]")
+                self.connection.close()
                 create_indexes(self.db_path)
             except duckdb.Error as e:
-                # Don't fail export if index creation fails
-                print(f"Warning: Failed to create indexes: {e}")
+                msg = f"Failed to create indexes: {e}"
+                if tracker.enabled:
+                    tracker.add_warning(msg)
+                else:
+                    console.log(f"[yellow]Warning: {msg}[/yellow]")
 
         # Update sync metadata
         self._update_sync_metadata(export_counts)
+
+        # Finish progress display
+        total_records = sum(export_counts.values())
+        if tracker.enabled:
+            tracker.finish(total_records)
+            console.log(
+                f"[bold green]Export complete: {total_records:,} records "
+                f"across {len(export_counts)} resources[/bold green]"
+            )
+            if total_errors > 0:
+                console.log(f"[bold red]{total_errors} resource(s) failed[/bold red]")
 
         return export_counts
 
@@ -222,16 +322,25 @@ class DuckDBExporter:
                     resource_name=resource_name,
                 )
 
+        # Build query using resource-specific Query class
+        query_cls = self.QUERY_CLASSES.get(resource_name)
+        if query_cls:
+            query = query_cls(
+                created_at_min=created_at_min,
+                created_at_max=created_at_max,
+                updated_at_min=updated_at_min,
+                updated_at_max=updated_at_max,
+            )
+        else:
+            # Fallback for resources without Query classes
+            # (shouldn't happen with current RESOURCE_ORDER)
+            query = None
+
         # Stream records and batch insert
         total_count = 0
         batch = []
 
-        async for record in endpoint.iter_all(
-            created_at_min=created_at_min,
-            created_at_max=created_at_max,
-            updated_at_min=updated_at_min,
-            updated_at_max=updated_at_max,
-        ):
+        async for record in endpoint.iter_all(query=query):
             # Convert Pydantic model to dict
             record_dict = pydantic_to_sql_dict(record)
 
@@ -352,15 +461,20 @@ class DuckDBExporter:
             # Convert to Polars DataFrame
             df = pl.DataFrame(records)
 
+            # Get column names in order and quote them for DuckDB
+            columns = df.columns
+            quoted_columns = [f'"{col}"' for col in columns]
+
             # Register DataFrame with DuckDB
             conn.register("temp_df", df)
 
-            # Insert using INSERT OR REPLACE (upsert)
-            # Note: DuckDB doesn't have native UPSERT, so we use INSERT OR REPLACE
-            # which works for tables with PRIMARY KEY constraints
+            # Insert using INSERT OR REPLACE with explicit column list
+            # Using explicit columns instead of SELECT * to avoid column count mismatches
+            # Quoting column names to handle reserved words like "order"
+            columns_str = ", ".join(quoted_columns)
             conn.execute(f"""
-                INSERT OR REPLACE INTO {table_name}
-                SELECT * FROM temp_df
+                INSERT OR REPLACE INTO {table_name} ({columns_str})
+                SELECT {columns_str} FROM temp_df
             """)
 
             # Unregister temporary DataFrame
@@ -425,7 +539,9 @@ class DuckDBExporter:
 
         except duckdb.Error as e:
             # Don't fail export if metadata update fails
-            print(f"Warning: Failed to update sync metadata: {e}")
+            console.log(
+                f"[yellow]Warning: Failed to update sync metadata: {e}[/yellow]"
+            )
 
     def get_sync_metadata(self) -> dict[str, dict]:
         """

@@ -14,6 +14,7 @@ from loyverse_sdk.db.schema_builder import (
 )
 from loyverse_sdk.db.connection import (
     DuckDBConnection,
+    database_exists,
     get_table_count,
     get_all_tables,
     table_exists,
@@ -27,6 +28,7 @@ from loyverse_sdk.db.exporter import (
     DuckDBExporter,
     quick_export,
 )
+from loyverse_sdk.db.progress import ExportProgress
 
 __all__ = [
     # Schema
@@ -34,6 +36,7 @@ __all__ = [
     "create_indexes",
     # Connection
     "DuckDBConnection",
+    "database_exists",
     "get_table_count",
     "get_all_tables",
     "table_exists",
@@ -44,4 +47,6 @@ __all__ = [
     # Exporter
     "DuckDBExporter",
     "quick_export",
+    # Progress
+    "ExportProgress",
 ]

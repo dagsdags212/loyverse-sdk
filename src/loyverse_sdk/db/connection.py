@@ -6,6 +6,7 @@ for working with DuckDB databases.
 """
 
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Generator, Optional
 import duckdb
 
@@ -176,6 +177,23 @@ def get_table_count(db_path: str, table_name: str) -> int:
         conn.close()
 
 
+def database_exists(db_path: str) -> bool:
+    """
+    Check if a DuckDB database file exists.
+
+    Args:
+        db_path: Path to DuckDB database file
+
+    Returns:
+        True if database file exists, False otherwise
+
+    Example:
+        if database_exists("loyverse.duckdb"):
+            print("Database exists")
+    """
+    return Path(db_path).exists()
+
+
 def get_all_tables(db_path: str) -> list[str]:
     """
     Get list of all tables in the database.
@@ -190,6 +208,9 @@ def get_all_tables(db_path: str) -> list[str]:
         tables = get_all_tables("loyverse.duckdb")
         print(f"Tables: {', '.join(tables)}")
     """
+    if not database_exists(db_path):
+        return []
+
     conn = duckdb.connect(db_path, read_only=True)
     try:
         result = conn.execute("SHOW TABLES").fetchall()
