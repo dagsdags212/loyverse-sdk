@@ -271,6 +271,126 @@ class DuckDBExporter:
 
         return export_counts
 
+    async def sync_all(
+        self,
+        resources: Optional[list[str]] = None,
+        batch_size: int = 1000,
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        show_progress: Optional[bool] = None,
+        create_indexes_after: bool = True,
+    ) -> dict[str, int]:
+        """Incremental sync: only fetch records updated since the last sync.
+
+        Reads ``last_sync_at`` from the ``sync_metadata`` table for each
+        resource. Resources that have never been synced get a full export.
+        After completion the metadata table is updated with
+        ``sync_type="incremental"``.
+
+        Args:
+            resources: Resource names to sync (None = all).
+            batch_size: Records per transaction.
+            batch_size: Records per transaction.
+            progress_callback: Optional ``callback(resource, current, total)``.
+            show_progress: Override instance default for progress display.
+            create_indexes_after: Create indexes when sync completes.
+
+        Returns:
+            Dictionary mapping resource names to record counts.
+
+        Raises:
+            ExportError: If the sync fails entirely.
+        """
+        use_progress = show_progress if show_progress is not None else self.show_progress
+
+        schema_is_new = not database_exists(self.db_path)
+        if schema_is_new:
+            if use_progress:
+                console.log("[bold]Initializing DuckDB schema...[/bold]")
+            self.init_schema(drop_existing=False)
+
+        sync_meta = self.get_sync_metadata() if not schema_is_new else {}
+
+        ordered_resources = [
+            r for r in RESOURCE_ORDER
+            if resources is None or r in resources
+        ]
+
+        tracker = ExportProgress(
+            use_progress,
+            total_resources=len(ordered_resources),
+        )
+
+        total_errors = 0
+        export_counts: dict[str, int] = {}
+
+        for resource in ordered_resources:
+            tracker.begin_resource(resource)
+            try:
+                meta = sync_meta.get(resource)
+                updated_at_min = meta["last_sync_at"] if meta else None
+
+                def make_callback(
+                    res: str,
+                    tracker: ExportProgress = tracker,
+                    user_cb=progress_callback,
+                ):
+                    def inner(resource_name: str, current: int, total: int):
+                        tracker.update_count(resource_name, current)
+                        if user_cb:
+                            user_cb(resource_name, current, total)
+
+                    return inner
+
+                count = await self.export_resource(
+                    resource,
+                    updated_at_min=updated_at_min,
+                    batch_size=batch_size,
+                    progress_callback=make_callback(resource),
+                )
+                export_counts[resource] = count
+                tracker.finish_resource(resource, count)
+            except Exception as e:
+                total_errors += 1
+                msg = f"Failed to sync {resource}: {e}"
+                if tracker.enabled:
+                    tracker.error_resource(resource, str(e))
+                    tracker.add_warning(msg)
+                else:
+                    console.log(f"[red]{msg}[/red]")
+                export_counts[resource] = 0
+
+        if sum(export_counts.values()) == 0 and total_errors == len(ordered_resources):
+            raise ExportError("All resources failed to sync.")
+
+        if create_indexes_after:
+            try:
+                self.create_indexes()
+            except duckdb.Error as e:
+                msg = f"Failed to create indexes: {e}"
+                if tracker.enabled:
+                    tracker.add_warning(msg)
+                else:
+                    console.log(f"[yellow]Warning: {msg}[/yellow]")
+
+        self._update_sync_metadata(
+            export_counts,
+            sync_type="incremental" if not schema_is_new else "full",
+        )
+
+        total_records = sum(export_counts.values())
+        if tracker.enabled:
+            tracker.finish(total_records)
+            console.log(
+                f"[bold green]Sync complete: {total_records:,} new/updated records "
+                f"across {len(export_counts)} resources[/bold green]"
+            )
+            if total_errors > 0:
+                console.log(
+                    f"[bold red]{total_errors} resource(s) failed[/bold red]"
+                )
+
+        return export_counts
+
     async def export_resource(
         self,
         resource_name: str,
@@ -516,12 +636,16 @@ class DuckDBExporter:
         """
         create_duckdb_schema(self.db_path, drop_existing=drop_existing)
 
-    def _update_sync_metadata(self, export_counts: dict[str, int]) -> None:
-        """
-        Update sync metadata table with export information.
+    def _update_sync_metadata(
+        self,
+        export_counts: dict[str, int],
+        sync_type: str = "full",
+    ) -> None:
+        """Update sync metadata table with export information.
 
         Args:
-            export_counts: Dictionary of resource names to record counts
+            export_counts: Dictionary of resource names to record counts.
+            sync_type: ``"full"`` or ``"incremental"``.
         """
         try:
             with self.connection.transaction() as conn:
@@ -534,7 +658,7 @@ class DuckDBExporter:
                         (resource_name, last_sync_at, records_count, sync_type)
                         VALUES (?, ?, ?, ?)
                     """,
-                        (resource_name, current_time, count, "full"),
+                        (resource_name, current_time, count, sync_type),
                     )
 
         except duckdb.Error as e:

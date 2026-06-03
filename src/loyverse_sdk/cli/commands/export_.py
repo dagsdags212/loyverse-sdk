@@ -50,6 +50,12 @@ def export_resources(
         "-q",
         help="Suppress progress display",
     ),
+    sync: bool = typer.Option(
+        False,
+        "--sync",
+        "-s",
+        help="Incremental sync: only fetch records updated since the last export",
+    ),
 ) -> None:
     """Export API data to a local DuckDB database for analytics.
 
@@ -59,6 +65,7 @@ def export_resources(
         loyverse export mydata.duckdb
         loyverse export --resource receipts
         loyverse export --created-at-min 2024-01-01
+        loyverse export --sync
     """
     db_path = str(resolve_db_path(db_path or config.LOYVERSE_DB_PATH))
     resources: list[str] | None = None
@@ -94,14 +101,24 @@ def export_resources(
 
     async def _run(client: LoyverseClient) -> None:
         try:
-            counts = await client.export_to_duckdb(**kwargs)
+            if sync:
+                counts = await client.sync_to_duckdb(
+                    db_path=db_path,
+                    resources=resources,
+                    batch_size=batch_size,
+                    show_progress=not quiet,
+                    create_indexes=not no_indexes,
+                )
+            else:
+                counts = await client.export_to_duckdb(**kwargs)
         except ExportError as e:
             console.print(f"[red]Export failed: {e}[/red]")
             raise typer.Exit(1)
 
+        verb = "Sync" if sync else "Export"
         total = sum(counts.values())
         console.print(
-            f"\n[bold green]Export complete: {total:,} records "
+            f"\n[bold green]{verb} complete: {total:,} records "
             f"across {len(counts)} resources[/bold green]"
         )
         console.print(f"[dim]Database: {db_path}[/dim]")

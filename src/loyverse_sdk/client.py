@@ -261,6 +261,51 @@ class LoyverseClient:
         finally:
             exporter.close()
 
+    async def sync_to_duckdb(
+        self,
+        db_path: str,
+        resources: Optional[list[str]] = None,
+        batch_size: int = 1000,
+        show_progress: bool = True,
+        create_indexes: bool = True,
+    ) -> dict[str, int]:
+        """Incrementally sync Loyverse data to a DuckDB database.
+
+        Reads the ``last_sync_at`` timestamp from the sync metadata table for
+        each resource and fetches only records updated since that time.
+        Resources that have never been synced get a full export.
+
+        Args:
+            db_path: Path to DuckDB database file.
+            resources: Resource names to sync (None = all).
+            batch_size: Records per transaction.
+            show_progress: Display real-time progress.
+            create_indexes: Whether to create indexes after sync.
+
+        Returns:
+            Dictionary mapping resource names to record counts.
+
+        Raises:
+            ExportError: If sync fails.
+
+        Example:
+            client = LoyverseClient()
+            counts = await client.sync_to_duckdb("loyverse.duckdb")
+            print(f"Synced: {counts}")
+            await client.close()
+        """
+        from loyverse_sdk.db.exporter import DuckDBExporter
+
+        exporter = DuckDBExporter(self, db_path, show_progress=show_progress)
+        try:
+            return await exporter.sync_all(
+                resources=resources,
+                batch_size=batch_size,
+                create_indexes_after=create_indexes,
+            )
+        finally:
+            exporter.close()
+
     async def export_resource_to_duckdb(
         self,
         resource_name: str,
