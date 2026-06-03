@@ -19,7 +19,7 @@ async def lifespan(server: FastMCP):
     except Exception:
         pass
     try:
-        yield {"client": client, "engine": engine}
+        yield {"client": client, "engine": engine, "db_path": db_path}
     finally:
         if engine is not None:
             engine.close()

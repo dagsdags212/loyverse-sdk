@@ -7,6 +7,7 @@ from mcp.server.fastmcp import Context
 from pydantic import BaseModel, ConfigDict, Field
 
 from loyverse_sdk.exceptions import LoyverseSDKError
+from loyverse_sdk.mcp.db_queries import get_from_db, is_db_fresh, list_from_db
 from loyverse_sdk.models import (
     CategoryListQuery,
     CustomerListQuery,
@@ -25,9 +26,17 @@ from loyverse_sdk.mcp.server import mcp
 # Shared helpers
 # ---------------------------------------------------------------------------
 
+_BASE_PARAM_KEYS = frozenset(
+    {"limit", "cursor", "created_at_min", "created_at_max", "updated_at_min", "updated_at_max"}
+)
+
 
 def _client(ctx: Context):
     return ctx.request_context.lifespan_context["client"]
+
+
+def _db_path(ctx: Context) -> str | None:
+    return ctx.request_context.lifespan_context.get("db_path")
 
 
 def _json(obj) -> str:
@@ -44,6 +53,40 @@ def _handle_error(e: Exception) -> str:
     if isinstance(e, LoyverseSDKError):
         return f"Error: {e}"
     return f"Error: Unexpected error — {type(e).__name__}: {e}"
+
+
+def _try_db_list(ctx: Context, table: str, params: BaseModel) -> str | None:
+    """Attempt to serve a list request from the local DuckDB.
+
+    Returns a JSON string on success, or None to fall through to the API.
+    Skips the DB when resource-specific filters are present.
+    """
+    dbp = _db_path(ctx)
+    if not dbp or not is_db_fresh(dbp):
+        return None
+    raw = params.model_dump(exclude_none=True)
+    if any(k not in _BASE_PARAM_KEYS for k in raw):
+        return None
+    return list_from_db(
+        dbp,
+        table,
+        limit=raw.get("limit", 50),
+        created_at_min=raw.get("created_at_min"),
+        created_at_max=raw.get("created_at_max"),
+        updated_at_min=raw.get("updated_at_min"),
+        updated_at_max=raw.get("updated_at_max"),
+    )
+
+
+def _try_db_get(ctx: Context, table: str, resource_id: str) -> str | None:
+    """Attempt to retrieve a single record from the local DuckDB.
+
+    Returns a JSON string on success, or None to fall through to the API.
+    """
+    dbp = _db_path(ctx)
+    if not dbp or not is_db_fresh(dbp):
+        return None
+    return get_from_db(dbp, table, resource_id)
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +174,9 @@ async def loyverse_list_receipts(params: ListReceiptsInput, ctx: Context) -> str
     Error response:
         "Error: <message>" on API or configuration failures.
     """
+    db_result = _try_db_list(ctx, "receipts", params)
+    if db_result is not None:
+        return db_result
     try:
         query = ReceiptListQuery(**_base_params(params))
         response = await _client(ctx).receipts.list(query)
@@ -161,6 +207,9 @@ async def loyverse_get_receipt(params: GetReceiptInput, ctx: Context) -> str:
     Error response:
         "Error: <message>" on not-found or API failures.
     """
+    db_result = _try_db_get(ctx, "receipts", params.receipt_id)
+    if db_result is not None:
+        return db_result
     try:
         receipt = await _client(ctx).receipts.retrieve(params.receipt_id)
         return _json(receipt.model_dump(mode="json"))
@@ -213,6 +262,9 @@ async def loyverse_list_items(params: ListItemsInput, ctx: Context) -> str:
     Returns:
         str: JSON with keys `items`, `next_cursor`, and `count`.
     """
+    db_result = _try_db_list(ctx, "items", params)
+    if db_result is not None:
+        return db_result
     try:
         query = ItemListQuery(**_base_params(params))
         response = await _client(ctx).items.list(query)
@@ -240,6 +292,9 @@ async def loyverse_get_item(params: GetItemInput, ctx: Context) -> str:
     Returns:
         str: JSON representation of the item.
     """
+    db_result = _try_db_get(ctx, "items", params.item_id)
+    if db_result is not None:
+        return db_result
     try:
         item = await _client(ctx).items.retrieve(params.item_id)
         return _json(item.model_dump(mode="json"))
@@ -286,6 +341,9 @@ async def loyverse_list_customers(params: ListCustomersInput, ctx: Context) -> s
     Returns:
         str: JSON with keys `items`, `next_cursor`, and `count`.
     """
+    db_result = _try_db_list(ctx, "customers", params)
+    if db_result is not None:
+        return db_result
     try:
         query = CustomerListQuery(**_base_params(params))
         response = await _client(ctx).customers.list(query)
@@ -313,6 +371,9 @@ async def loyverse_get_customer(params: GetCustomerInput, ctx: Context) -> str:
     Returns:
         str: JSON representation of the customer.
     """
+    db_result = _try_db_get(ctx, "customers", params.customer_id)
+    if db_result is not None:
+        return db_result
     try:
         customer = await _client(ctx).customers.retrieve(params.customer_id)
         return _json(customer.model_dump(mode="json"))
@@ -348,6 +409,9 @@ async def loyverse_list_categories(params: _BaseListInput, ctx: Context) -> str:
     Returns:
         str: JSON with keys `items`, `next_cursor`, and `count`.
     """
+    db_result = _try_db_list(ctx, "categories", params)
+    if db_result is not None:
+        return db_result
     try:
         query = CategoryListQuery(**_base_params(params))
         response = await _client(ctx).categories.list(query)
@@ -375,6 +439,9 @@ async def loyverse_get_category(params: GetCategoryInput, ctx: Context) -> str:
     Returns:
         str: JSON representation of the category.
     """
+    db_result = _try_db_get(ctx, "categories", params.category_id)
+    if db_result is not None:
+        return db_result
     try:
         category = await _client(ctx).categories.retrieve(params.category_id)
         return _json(category.model_dump(mode="json"))
@@ -410,6 +477,9 @@ async def loyverse_list_employees(params: _BaseListInput, ctx: Context) -> str:
     Returns:
         str: JSON with keys `items`, `next_cursor`, and `count`.
     """
+    db_result = _try_db_list(ctx, "employees", params)
+    if db_result is not None:
+        return db_result
     try:
         query = EmployeeListQuery(**_base_params(params))
         response = await _client(ctx).employees.list(query)
@@ -437,6 +507,9 @@ async def loyverse_get_employee(params: GetEmployeeInput, ctx: Context) -> str:
     Returns:
         str: JSON representation of the employee.
     """
+    db_result = _try_db_get(ctx, "employees", params.employee_id)
+    if db_result is not None:
+        return db_result
     try:
         employee = await _client(ctx).employees.retrieve(params.employee_id)
         return _json(employee.model_dump(mode="json"))
@@ -474,10 +547,12 @@ async def loyverse_list_shifts(params: _BaseListInput, ctx: Context) -> str:
     Returns:
         str: JSON with keys `items`, `next_cursor`, and `count`.
     """
+    db_result = _try_db_list(ctx, "shifts", params)
+    if db_result is not None:
+        return db_result
     try:
         query = ShiftListQuery(**_base_params(params))
         response = await _client(ctx).shifts.list(query)
-        # ShiftListResponse uses 'shifts' key, not 'items'
         data = response.model_dump(mode="json")
         normalized = {
             "items": data.get("shifts", []),
@@ -507,6 +582,9 @@ async def loyverse_get_shift(params: GetShiftInput, ctx: Context) -> str:
     Returns:
         str: JSON representation of the shift including cash movements and payment summaries.
     """
+    db_result = _try_db_get(ctx, "shifts", params.shift_id)
+    if db_result is not None:
+        return db_result
     try:
         shift = await _client(ctx).shifts.retrieve(params.shift_id)
         return _json(shift.model_dump(mode="json"))
@@ -542,6 +620,9 @@ async def loyverse_list_stores(params: _BaseListInput, ctx: Context) -> str:
     Returns:
         str: JSON with keys `items`, `next_cursor`, and `count`.
     """
+    db_result = _try_db_list(ctx, "stores", params)
+    if db_result is not None:
+        return db_result
     try:
         query = StoreListQuery(**_base_params(params))
         response = await _client(ctx).stores.list(query)
@@ -569,6 +650,9 @@ async def loyverse_get_store(params: GetStoreInput, ctx: Context) -> str:
     Returns:
         str: JSON representation of the store.
     """
+    db_result = _try_db_get(ctx, "stores", params.store_id)
+    if db_result is not None:
+        return db_result
     try:
         store = await _client(ctx).stores.retrieve(params.store_id)
         return _json(store.model_dump(mode="json"))
@@ -611,6 +695,9 @@ async def loyverse_list_inventory(params: ListInventoryInput, ctx: Context) -> s
     Returns:
         str: JSON with keys `items`, `next_cursor`, and `count`.
     """
+    db_result = _try_db_list(ctx, "inventory", params)
+    if db_result is not None:
+        return db_result
     try:
         query = InventoryListQuery(**_base_params(params))
         response = await _client(ctx).inventory.list(query)
@@ -658,6 +745,9 @@ async def loyverse_list_payment_types(
     Returns:
         str: JSON with keys `items`, `next_cursor`, and `count`.
     """
+    db_result = _try_db_list(ctx, "payment_types", params)
+    if db_result is not None:
+        return db_result
     try:
         query = PaymentTypeListQuery(**_base_params(params))
         response = await _client(ctx).payment_types.list(query)
@@ -685,6 +775,9 @@ async def loyverse_get_payment_type(params: GetPaymentTypeInput, ctx: Context) -
     Returns:
         str: JSON representation of the payment type.
     """
+    db_result = _try_db_get(ctx, "payment_types", params.payment_type_id)
+    if db_result is not None:
+        return db_result
     try:
         pt = await _client(ctx).payment_types.retrieve(params.payment_type_id)
         return _json(pt.model_dump(mode="json"))
