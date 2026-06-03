@@ -1,6 +1,6 @@
 [project]
 name = "loyverse-sdk"
-version = "0.4.0"
+version = "0.4.1"
 description = "Asynchronous Python SDK for the Loyverse API"
 readme = "README.md"
 authors = [{ name = "dagsdags212", email = "jegsamson.dev@gmail.com" }]
@@ -37,9 +37,7 @@ dependency-groups = [
 ]
 
 [project.optional-dependencies]
-mcp = [
-    "mcp>=1.0.0",
-]
+mcp = ["mcp>=1.0.0"]
 
 [project.scripts]
 loyverse = "loyverse_sdk.cli.main:app"
