@@ -141,10 +141,37 @@ The `loyverse-mcp` server exposes your Loyverse data as MCP tools, letting LLM c
 The MCP server requires the `mcp` extra:
 
 ```bash
+# Global install
 pip install "loyverse_sdk[mcp]"
+
+# uv-managed project
+uv add "loyverse_sdk[mcp]"
 ```
 
-### Claude Desktop Setup
+### MCP Client Setup
+
+The `loyverse-mcp` command communicates over stdio. How you reference it depends on your setup:
+
+**Globally installed** — the script is on your PATH:
+
+```json
+"command": "loyverse-mcp"
+```
+
+**uv-managed project** — use `uv run` (works from anywhere inside the project):
+
+```json
+"command": "uv",
+"args": ["run", "loyverse-mcp"]
+```
+
+**uv-managed project (explicit venv path)** — point directly at the virtualenv:
+
+```json
+"command": "/path/to/project/.venv/bin/loyverse-mcp"
+```
+
+### Claude Desktop
 
 Add the server to `~/.config/claude/claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
 
@@ -152,7 +179,8 @@ Add the server to `~/.config/claude/claude_desktop_config.json` (macOS: `~/Libra
 {
   "mcpServers": {
     "loyverse": {
-      "command": "loyverse-mcp",
+      "command": "uv",
+      "args": ["run", "loyverse-mcp"],
       "env": {
         "LOYVERSE_API_TOKEN": "your_api_token_here",
         "LOYVERSE_DB_PATH": "loyverse.db"
@@ -161,6 +189,8 @@ Add the server to `~/.config/claude/claude_desktop_config.json` (macOS: `~/Libra
   }
 }
 ```
+
+If you installed globally (`pip install`), replace the command with just `"loyverse-mcp"` and omit `args`.
 
 Restart Claude Desktop. You should see a hammer icon (🔨) in the chat toolbar indicating tools are available.
 
