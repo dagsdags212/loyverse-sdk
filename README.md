@@ -49,26 +49,50 @@ uv pip install git+https://github.com/dagsdags212/loyverse_sdk.git
 
 ## Setup
 
-Set your API token and database path as environment variables:
+Configuration lives in `~/.loyverse`, so the CLI works from any directory:
 
-```bash
-export LOYVERSE_API_TOKEN=your_api_token
-export LOYVERSE_DB_PATH=loyverse.db          # optional, defaults to loyverse.db
+```
+~/.loyverse/
+├── .loyverse.env       # API token and settings
+└── db/
+    └── loyverse.db     # exported DuckDB database(s)
 ```
 
-Or create a `.env` file in your project root:
+The easiest way to set it up is the interactive command, which prompts for the
+config directory (default `~/.loyverse`), your API token, and a database name
+(default `loyverse.db`):
+
+```bash
+loyverse init
+
+# Or supply any value as a flag to skip its prompt (handy for scripts):
+loyverse init --config-dir ~/work/loyverse \  # -c  where config + databases live
+              --api-token YOUR_TOKEN \         # -t  paste your Loyverse API key
+              --db-path mydata.duckdb          # -d  database name (or a path)
+```
+
+`init` writes `<config-dir>/.loyverse.env`. If you pick a non-default config
+directory, the location is recorded in a small pointer file
+(`~/.config/loyverse/config_dir`) so every later command finds it automatically
+— no environment variable to export. You can also edit the env file directly:
 
 ```env
 LOYVERSE_API_TOKEN=your_api_token
 LOYVERSE_DB_PATH=loyverse.db                 # optional, defaults to loyverse.db
 ```
 
-Or use the interactive setup command:
+`LOYVERSE_DB_PATH` (and the `--db-path` argument) accept either a bare name —
+stored under `<config-dir>/db/` — or an explicit path (absolute or containing a
+directory), which is used as-is.
 
-```bash
-loyverse init
-loyverse init --db-path mydata.duckdb        # set a custom database path
-```
+The config directory is resolved in this order: the `LOYVERSE_CONFIG_DIR`
+environment variable, then the pointer file written by `init`, then the default
+`~/.loyverse`. Environment variables set in your shell still take precedence
+over values in the env file.
+
+> **Migrating from an older version:** if a `.env` exists in your working
+> directory and `~/.loyverse` does not yet exist, its values are copied into
+> `~/.loyverse/.loyverse.env` automatically on first run.
 
 ## CLI Usage
 

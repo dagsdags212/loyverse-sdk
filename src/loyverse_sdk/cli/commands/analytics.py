@@ -23,10 +23,11 @@ import typer
 from loyverse_sdk.analytics import AnalyticsEngine
 from loyverse_sdk.cli._async import console
 from loyverse_sdk.core.config import config
+from loyverse_sdk.core.paths import resolve_db_path
 
 
 def _open_engine(db_path: str | None = None) -> AnalyticsEngine:
-    db_path = db_path or config.LOYVERSE_DB_PATH
+    db_path = str(resolve_db_path(db_path or config.LOYVERSE_DB_PATH))
     try:
         return AnalyticsEngine(db_path)
     except FileNotFoundError as e:

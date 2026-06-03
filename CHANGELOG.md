@@ -1,8 +1,33 @@
 # Changelog
 
-## [0.4.0] — 2026-05-31
+## [Unreleased]
 
 ### Added
+- Centralized config directory at `~/.loyverse` (override with `LOYVERSE_CONFIG_DIR`):
+  - API token and settings stored in `<config-dir>/.loyverse.env`
+  - Exported databases stored under `<config-dir>/db/`
+  - New `loyverse_sdk.core.paths` module with `config_dir`, `env_file`, `db_dir`, `resolve_db_path`, pointer-file helpers, and legacy migration
+- `loyverse init` now configures the **config directory location** (default `~/.loyverse`), API token, and database name:
+  - New `--config-dir`/`-c` and `--api-token`/`-t` options (alongside `--db-path`/`-d`); each skips its prompt when supplied, enabling non-interactive setup
+  - A non-default config directory is recorded in a pointer file (`~/.config/loyverse/config_dir`) so later commands discover it automatically — no env var to export
+- Config directory resolution order: `LOYVERSE_CONFIG_DIR` env var → pointer file → default `~/.loyverse`
+- Automatic migration: a `.env` in the working directory is copied into the config dir on first run when no config exists yet
+
+### Changed
+- `loyverse init` writes to `<config-dir>/.loyverse.env` instead of a `.env` in the current directory
+- Bare database names (e.g. `mydata.duckdb`) resolve under `<config-dir>/db/`; explicit/absolute paths are used as-is
+- Config is loaded from the resolved config directory's `.loyverse.env` rather than the working-directory `.env`
+
+## [0.4.0] — 2026-06-02
+
+### Added
+- **MCP server** (`loyverse-mcp`) — FastMCP stdio server exposing the Loyverse SDK via the Model Context Protocol
+  - 18 CRUD tools: `list_*` and `get_*` for receipts, items, customers, categories, employees, shifts, stores, payment types, inventory, and merchant
+  - 12 analytics tools: daily revenue, total revenue, revenue by store/category/employee, top items, RFM analysis, top customers, unique customers, peak hours, peak days, monthly summary
+  - Pydantic input models with pagination, date filtering, store/category/email filters
+  - All tools read-only (`readOnlyHint=True`, `destructiveHint=False`)
+  - Lifespan-managed client and analytics engine with automatic cleanup
+  - Available as `mcp` optional dependency (`pip install loyverse-sdk[mcp]`)
 - `LOYVERSE_DB_PATH` config setting (default: `loyverse.db`) for automatic database path resolution
 - `loyverse init` now prompts for database path in addition to API token
 - `--by-month` flag on `loyverse analytics revenue` and `loyverse_analytics_total_revenue` MCP tool

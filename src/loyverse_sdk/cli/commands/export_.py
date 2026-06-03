@@ -8,6 +8,7 @@ from loyverse_sdk.cli._async import console, run_async
 from loyverse_sdk.cli._dates import normalize_date
 from loyverse_sdk.cli._metadata import get_listable_resources
 from loyverse_sdk.core.config import config
+from loyverse_sdk.core.paths import resolve_db_path
 from loyverse_sdk.exceptions import ExportError
 
 
@@ -59,7 +60,7 @@ def export_resources(
         loyverse export --resource receipts
         loyverse export --created-at-min 2024-01-01
     """
-    db_path = db_path or config.LOYVERSE_DB_PATH
+    db_path = str(resolve_db_path(db_path or config.LOYVERSE_DB_PATH))
     resources: list[str] | None = None
     if resource:
         listable = get_listable_resources()

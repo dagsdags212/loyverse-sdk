@@ -1,6 +1,6 @@
 [project]
 name = "loyverse-sdk"
-version = "0.3.0"
+version = "0.4.0"
 description = "Asynchronous Python SDK for the Loyverse API"
 readme = "README.md"
 authors = [{ name = "dagsdags212", email = "jegsamson.dev@gmail.com" }]
