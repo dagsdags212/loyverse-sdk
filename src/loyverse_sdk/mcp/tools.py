@@ -831,7 +831,7 @@ def _engine(ctx: Context):
 
 
 def _format_analytics(df) -> str:
-    return _json(df.to_dicts())
+    return df if isinstance(df, str) else _json(df.to_dicts())
 
 
 class _AnalyticsInput(BaseModel):
@@ -887,13 +887,14 @@ async def loyverse_analytics_daily_revenue(
     """
     try:
         engine = _engine(ctx)
-        df = engine.revenue.daily_revenue(
+        result = engine.revenue.daily_revenue(
             days=params.days,
             store_id=params.store_id,
             date_start=params.date_start,
             date_end=params.date_end,
+            fmt="json",
         )
-        return _format_analytics(df)
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -925,20 +926,22 @@ async def loyverse_analytics_total_revenue(
     try:
         engine = _engine(ctx)
         if params.by_month:
-            df = engine.revenue.total_revenue_by_month(
+            result = engine.revenue.total_revenue_by_month(
                 days=params.days,
                 store_id=params.store_id,
                 date_start=params.date_start,
                 date_end=params.date_end,
+                fmt="json",
             )
-            return _format_analytics(df)
-        total = engine.revenue.total_revenue(
+            return result
+        result = engine.revenue.total_revenue(
             days=params.days,
             store_id=params.store_id,
             date_start=params.date_start,
             date_end=params.date_end,
+            fmt="json",
         )
-        return _json({"total_revenue": total})
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -966,12 +969,13 @@ async def loyverse_analytics_revenue_by_store(
     """
     try:
         engine = _engine(ctx)
-        df = engine.revenue.revenue_by_store(
+        result = engine.revenue.revenue_by_store(
             days=params.days,
             date_start=params.date_start,
             date_end=params.date_end,
+            fmt="json",
         )
-        return _format_analytics(df)
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -1000,14 +1004,15 @@ async def loyverse_analytics_top_items(params: _AnalyticsInput, ctx: Context) ->
     """
     try:
         engine = _engine(ctx)
-        df = engine.products.top_items(
+        result = engine.products.top_items(
             days=params.days,
             store_id=params.store_id,
             date_start=params.date_start,
             date_end=params.date_end,
             n=10,
+            fmt="json",
         )
-        return _format_analytics(df)
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -1037,13 +1042,14 @@ async def loyverse_analytics_revenue_by_category(
     """
     try:
         engine = _engine(ctx)
-        df = engine.products.revenue_by_category(
+        result = engine.products.revenue_by_category(
             days=params.days,
             store_id=params.store_id,
             date_start=params.date_start,
             date_end=params.date_end,
+            fmt="json",
         )
-        return _format_analytics(df)
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -1070,8 +1076,8 @@ async def loyverse_analytics_rfm_analysis(ctx: Context) -> str:
     """
     try:
         engine = _engine(ctx)
-        df = engine.customers.rfm_analysis()
-        return _format_analytics(df)
+        result = engine.customers.rfm_analysis(fmt="json")
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -1099,14 +1105,15 @@ async def loyverse_analytics_top_customers(
     """
     try:
         engine = _engine(ctx)
-        df = engine.customers.top_customers(
+        result = engine.customers.top_customers(
             days=params.days,
             store_id=params.store_id,
             date_start=params.date_start,
             date_end=params.date_end,
             n=10,
+            fmt="json",
         )
-        return _format_analytics(df)
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -1134,13 +1141,14 @@ async def loyverse_analytics_unique_customers(
     """
     try:
         engine = _engine(ctx)
-        count = engine.customers.unique_customers(
+        result = engine.customers.unique_customers(
             days=params.days,
             store_id=params.store_id,
             date_start=params.date_start,
             date_end=params.date_end,
+            fmt="json",
         )
-        return _json({"unique_customers": count})
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -1168,13 +1176,14 @@ async def loyverse_analytics_revenue_by_employee(
     """
     try:
         engine = _engine(ctx)
-        df = engine.employees.revenue_by_employee(
+        result = engine.employees.revenue_by_employee(
             days=params.days,
             store_id=params.store_id,
             date_start=params.date_start,
             date_end=params.date_end,
+            fmt="json",
         )
-        return _format_analytics(df)
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -1202,13 +1211,14 @@ async def loyverse_analytics_peak_hours(params: _AnalyticsInput, ctx: Context) -
     """
     try:
         engine = _engine(ctx)
-        df = engine.operations.peak_hours(
+        result = engine.operations.peak_hours(
             days=params.days,
             store_id=params.store_id,
             date_start=params.date_start,
             date_end=params.date_end,
+            fmt="json",
         )
-        return _format_analytics(df)
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -1236,13 +1246,14 @@ async def loyverse_analytics_peak_days(params: _AnalyticsInput, ctx: Context) ->
     """
     try:
         engine = _engine(ctx)
-        df = engine.operations.peak_days(
+        result = engine.operations.peak_days(
             days=params.days,
             store_id=params.store_id,
             date_start=params.date_start,
             date_end=params.date_end,
+            fmt="json",
         )
-        return _format_analytics(df)
+        return result
     except Exception as e:
         return _handle_error(e)
 
@@ -1266,7 +1277,7 @@ async def loyverse_analytics_monthly_summary(ctx: Context) -> str:
     """
     try:
         engine = _engine(ctx)
-        df = engine.time_series.monthly_summary(months=12)
-        return _format_analytics(df)
+        result = engine.time_series.monthly_summary(months=12, fmt="json")
+        return result
     except Exception as e:
         return _handle_error(e)

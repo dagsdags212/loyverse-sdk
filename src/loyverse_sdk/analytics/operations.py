@@ -7,7 +7,12 @@ from typing import Optional
 import duckdb
 import polars as pl
 
-from loyverse_sdk.analytics._base import date_filter, _query, _scalar
+from loyverse_sdk.analytics._base import (
+    Format,
+    date_filter,
+    _query,
+    _scalar,
+)
 
 
 class OperationsAnalytics:
@@ -20,7 +25,8 @@ class OperationsAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Transaction count and revenue by hour of day."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -47,6 +53,7 @@ class OperationsAnalytics:
             ORDER BY hour
         """,
             dp + sp,
+            fmt=fmt,
         )
 
     def peak_days(
@@ -55,7 +62,8 @@ class OperationsAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Transaction count by day of week."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -86,6 +94,7 @@ class OperationsAnalytics:
                 END
         """,
             dp + sp,
+            fmt=fmt,
         )
 
     def payment_method_split(
@@ -94,7 +103,8 @@ class OperationsAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Revenue and transaction count by payment type name.
 
         Note: Receipts store only a single payment_type_id on the main record.
@@ -130,6 +140,7 @@ class OperationsAnalytics:
             ORDER BY revenue DESC
         """,
             dp + sp,
+            fmt=fmt,
         )
 
     def discount_analysis(
@@ -137,7 +148,8 @@ class OperationsAnalytics:
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Daily discount totals and discount rate."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -160,6 +172,7 @@ class OperationsAnalytics:
             ORDER BY date DESC
         """,
             dp,
+            fmt=fmt,
         )
 
     def tip_analysis(
@@ -167,7 +180,8 @@ class OperationsAnalytics:
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Daily tip totals and average tip per transaction."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -189,6 +203,7 @@ class OperationsAnalytics:
             ORDER BY date DESC
         """,
             dp,
+            fmt=fmt,
         )
 
     def dining_option_split(
@@ -196,7 +211,8 @@ class OperationsAnalytics:
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Revenue breakdown by dining option (dine-in, takeaway, etc.)."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -215,4 +231,5 @@ class OperationsAnalytics:
             ORDER BY revenue DESC
         """,
             dp,
+            fmt=fmt,
         )

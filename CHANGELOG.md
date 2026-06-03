@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.4.2] - 2026-06-03
+
+### Added
+- **Profitability analytics** (`loyverse analytics profitability`) — gross profit, margins, and COGS tracking:
+  - `gross_profit` — daily revenue, cost, gross profit, and margin %
+  - `profit_margins` — item-level margins sortable by gross profit, margin %, or revenue
+  - `profit_by_category` — margins broken down by product category
+  - `margin_trend` — daily margin % trend with period-over-period change
+  - `overall_margin` — single-period overall margin % (scalar)
+  - `items_without_cost` — items sold without COGS data to identify setup gaps
+- **Inventory analytics** (`loyverse analytics inventory`) — turnover, stock value, and low-stock alerts:
+  - `turnover` — units sold ÷ current stock with days-to-sell estimate
+  - `stock_value` — per-variant stock × unit cost
+  - `total_inventory_value` — total tied-up capital (scalar)
+  - `stock_value_by_store` — value breakdown per store location
+  - `low_stock` — items at/below threshold, respecting `variant_store.low_stock_threshold`
+  - `items_never_sold` — dead stock — items on hand that haven't sold in the period
+- **`fmt` parameter** on all 29 analytics methods — returns `"dataframe"` (default), `"json"`, or `"csv"` for UNIX pipeline composability
+- Test fixture extended with `variants`, `inventory`, and `variant_store` tables with cost data
+- 24 new tests for profitability and inventory modules
+
+### Changed
+- **CLI analytics commands reorganized** with full docstrings, example blocks, and consistent flag naming across all 8 subcommands
+- New CLI flags surfaced: `--refunds` (revenue), `--dod` (time-series), `--new-vs-returning`/`--visit-distribution` (customers), `--daily` (employees)
+- MCP analytics tools now pass `fmt="json"` directly to analytics methods instead of wrapping DataFrames
+- `_base.py` shared layer expanded with `format` param, `_serialize()`, `_scalar_to_output()`, and `_dict_to_output()` helpers
+
+### Fixed
+- Date-boundary test failures — analytics tests used `days=30` against seed data from early May, which filtered out all records after June 3. Bumped to `days=90` across all affected tests
+
 ## [0.4.1] - 2026-06-03
 
 ### Added

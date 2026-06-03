@@ -7,7 +7,13 @@ from typing import Optional
 import duckdb
 import polars as pl
 
-from loyverse_sdk.analytics._base import date_filter, _query, _scalar
+from loyverse_sdk.analytics._base import (
+    Format,
+    date_filter,
+    _dict_to_output,
+    _query,
+    _scalar,
+)
 
 
 class ProductAnalytics:
@@ -20,7 +26,8 @@ class ProductAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Revenue breakdown by product category, with share percentages."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -53,6 +60,7 @@ class ProductAnalytics:
             ORDER BY revenue DESC
         """,
             dp + sp,
+            fmt=fmt,
         )
 
     def top_items(
@@ -62,7 +70,8 @@ class ProductAnalytics:
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
         n: int = 10,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Top N items by revenue and quantity sold."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -89,6 +98,7 @@ class ProductAnalytics:
             LIMIT ?
         """,
             dp + sp + [n],
+            fmt=fmt,
         )
 
     def items_per_transaction(
@@ -97,7 +107,8 @@ class ProductAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> dict:
+        fmt: Format = "dataframe",
+    ) -> dict | str:
         """Average items per transaction, plus distribution percentiles."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -148,14 +159,18 @@ class ProductAnalytics:
             dp + sp,
         )
 
-        return {"average": avg_items, "distribution": percentiles}
+        result = {"average": avg_items, "distribution": percentiles}
+        if fmt == "dataframe":
+            return result
+        return _dict_to_output(result, fmt)
 
     def category_mix_trend(
         self,
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 90,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Monthly category revenue share over time."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -176,4 +191,5 @@ class ProductAnalytics:
             ORDER BY month DESC, revenue DESC
         """,
             dp,
+            fmt=fmt,
         )

@@ -33,13 +33,16 @@ from loyverse_sdk.analytics.customers import CustomerAnalytics
 from loyverse_sdk.analytics.employees import EmployeeAnalytics
 from loyverse_sdk.analytics.operations import OperationsAnalytics
 from loyverse_sdk.analytics.time_series import TimeSeriesAnalytics
+from loyverse_sdk.analytics.profitability import ProfitabilityAnalytics
+from loyverse_sdk.analytics.inventory import InventoryAnalytics
 
 
 class AnalyticsEngine:
     """Entry point for analytics on the Loyverse data warehouse.
 
     Wraps a DuckDB connection and exposes typed analytics modules for
-    revenue, products, customers, employees, operations, and time series.
+    revenue, products, customers, employees, operations, time series,
+    profitability, and inventory.
     """
 
     def __init__(
@@ -61,6 +64,8 @@ class AnalyticsEngine:
         self.employees = EmployeeAnalytics(self._conn)
         self.operations = OperationsAnalytics(self._conn)
         self.time_series = TimeSeriesAnalytics(self._conn)
+        self.profitability = ProfitabilityAnalytics(self._conn)
+        self.inventory = InventoryAnalytics(self._conn)
 
     def close(self) -> None:
         self._conn.close()

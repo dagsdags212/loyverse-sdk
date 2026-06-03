@@ -7,7 +7,12 @@ from typing import Optional
 import duckdb
 import polars as pl
 
-from loyverse_sdk.analytics._base import date_filter, _query, _scalar
+from loyverse_sdk.analytics._base import (
+    Format,
+    date_filter,
+    _query,
+    _scalar,
+)
 
 
 class EmployeeAnalytics:
@@ -20,7 +25,8 @@ class EmployeeAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Revenue, transaction count, and average ticket per employee."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -47,6 +53,7 @@ class EmployeeAnalytics:
             ORDER BY revenue DESC
         """,
             dp + sp,
+            fmt=fmt,
         )
 
     def employee_daily_summary(
@@ -55,7 +62,8 @@ class EmployeeAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Daily transaction counts and revenue per employee."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -81,6 +89,7 @@ class EmployeeAnalytics:
             ORDER BY date DESC, employee
         """,
             dp + sp,
+            fmt=fmt,
         )
 
     def tip_by_employee(
@@ -88,7 +97,8 @@ class EmployeeAnalytics:
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Tip totals and tip rate per employee."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -110,4 +120,5 @@ class EmployeeAnalytics:
             ORDER BY total_tips DESC
         """,
             dp,
+            fmt=fmt,
         )

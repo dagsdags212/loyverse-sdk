@@ -6,13 +6,13 @@ from loyverse_sdk.analytics.time_series import TimeSeriesAnalytics
 class TestMovingAverage:
     def test_returns_smoothed_data(self, db):
         a = TimeSeriesAnalytics(db)
-        df = a.moving_average_revenue(window=3, days=30)
+        df = a.moving_average_revenue(window=3, days=90)
         assert len(df) > 0
         assert "ma_3d" in df.columns
 
     def test_ma_less_volatile(self, db):
         a = TimeSeriesAnalytics(db)
-        df = a.moving_average_revenue(window=3, days=30)
+        df = a.moving_average_revenue(window=3, days=90)
         # The moving average column should exist and have values
         assert df["ma_3d"].null_count() < len(df)
 
@@ -20,7 +20,7 @@ class TestMovingAverage:
 class TestWeekOverWeek:
     def test_returns_wow_data(self, db):
         a = TimeSeriesAnalytics(db)
-        df = a.week_over_week_growth(days=30)
+        df = a.week_over_week_growth(days=90)
         assert len(df) > 0
         assert "wow_change_pct" in df.columns
 
@@ -37,7 +37,7 @@ class TestMonthlySummary:
 class TestDayOverDay:
     def test_returns_dod_data(self, db):
         a = TimeSeriesAnalytics(db)
-        df = a.day_over_day(days=30)
+        df = a.day_over_day(days=90)
         assert len(df) > 0
         assert "dod_change_pct" in df.columns
 

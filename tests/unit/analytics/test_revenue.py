@@ -6,14 +6,14 @@ from loyverse_sdk.analytics.revenue import RevenueAnalytics
 class TestDailyRevenue:
     def test_daily_revenue_default(self, db):
         a = RevenueAnalytics(db)
-        df = a.daily_revenue(days=31)
+        df = a.daily_revenue(days=90)
         assert len(df) == 3  # May 1, 2, 3
         assert df["tx_count"].sum() == 6  # 6 SALE receipts (REFUND excluded)
         assert df["revenue"].sum() > 0
 
     def test_daily_revenue_excludes_cancelled(self, db):
         a = RevenueAnalytics(db)
-        df = a.daily_revenue(days=30)
+        df = a.daily_revenue(days=90)
         assert len(df) >= 2  # At least 2 days of sales
 
     def test_total_revenue(self, db):
@@ -33,13 +33,13 @@ class TestDailyRevenue:
 
     def test_revenue_by_store(self, db):
         a = RevenueAnalytics(db)
-        df = a.revenue_by_store(days=30)
+        df = a.revenue_by_store(days=90)
         assert len(df) == 1
         assert df["store_name"][0] == "Main Store"
 
     def test_refund_rate(self, db):
         a = RevenueAnalytics(db)
-        df = a.refund_rate(days=31)
+        df = a.refund_rate(days=90)
         assert len(df) == 3
         # Day 3 has a refund (negative amount)
         day3 = df.filter(df["date"].cast(str).str.contains("2026-05-03"))

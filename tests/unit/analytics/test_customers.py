@@ -40,7 +40,7 @@ class TestRFM:
 class TestTopCustomers:
     def test_returns_ranked(self, db):
         a = CustomerAnalytics(db)
-        df = a.top_customers(days=30, n=10)
+        df = a.top_customers(days=90, n=10)
         assert len(df) >= 1
         # John has 2 purchases (RCPT-0001 and RCPT-0002)
         # each $250 with $25 discount on first = $475
@@ -50,7 +50,7 @@ class TestTopCustomers:
 class TestRetention:
     def test_retention_rate(self, db):
         a = CustomerAnalytics(db)
-        rate = a.retention_rate(days=30)
+        rate = a.retention_rate(days=90)
         assert 0 <= rate <= 100
 
 

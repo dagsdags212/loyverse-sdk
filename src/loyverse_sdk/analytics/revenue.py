@@ -7,7 +7,14 @@ from typing import Optional
 import duckdb
 import polars as pl
 
-from loyverse_sdk.analytics._base import date_filter, store_filter, _query, _scalar
+from loyverse_sdk.analytics._base import (
+    Format,
+    date_filter,
+    store_filter,
+    _query,
+    _scalar,
+    _scalar_to_output,
+)
 
 
 class RevenueAnalytics:
@@ -20,7 +27,8 @@ class RevenueAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Daily revenue, transaction count, and average ticket.
 
         Returns a DataFrame with columns: date, revenue, tx_count, avg_ticket.
@@ -43,6 +51,7 @@ class RevenueAnalytics:
             ORDER BY date DESC
         """,
             dp + sp,
+            fmt=fmt,
         )
 
     def revenue_by_store(
@@ -50,7 +59,8 @@ class RevenueAnalytics:
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Revenue and transaction counts broken down by store."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -70,6 +80,7 @@ class RevenueAnalytics:
             ORDER BY revenue DESC
         """,
             dp,
+            fmt=fmt,
         )
 
     def revenue_growth(
@@ -77,7 +88,8 @@ class RevenueAnalytics:
         period: str = "month",
         months: int = 12,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Period-over-period revenue with growth rate.
 
         Args:
@@ -115,6 +127,7 @@ class RevenueAnalytics:
             LIMIT ?
         """,
             sp + [months],
+            fmt=fmt,
         )
 
     def total_revenue(
@@ -123,11 +136,12 @@ class RevenueAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> float:
+        fmt: Format = "dataframe",
+    ) -> float | str:
         """Total revenue as a single scalar."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
         sf, sp = store_filter(store_id)
-        return (
+        raw = (
             _scalar(
                 self._conn,
                 f"""
@@ -140,6 +154,9 @@ class RevenueAnalytics:
             )
             or 0.0
         )
+        if fmt == "dataframe":
+            return raw
+        return _scalar_to_output(raw, fmt, "total_revenue")
 
     def total_revenue_by_month(
         self,
@@ -147,7 +164,8 @@ class RevenueAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Total revenue broken down by month.
 
         Returns a DataFrame with columns: month, revenue, tx_count, avg_ticket.
@@ -170,6 +188,7 @@ class RevenueAnalytics:
             ORDER BY month DESC
         """,
             dp + sp,
+            fmt=fmt,
         )
 
     def refund_rate(
@@ -177,7 +196,8 @@ class RevenueAnalytics:
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Refund totals and rate as a percentage of sales."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -199,4 +219,5 @@ class RevenueAnalytics:
             ORDER BY date DESC
         """,
             dp,
+            fmt=fmt,
         )

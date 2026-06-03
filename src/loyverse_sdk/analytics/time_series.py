@@ -7,7 +7,11 @@ from typing import Optional
 import duckdb
 import polars as pl
 
-from loyverse_sdk.analytics._base import date_filter, _query
+from loyverse_sdk.analytics._base import (
+    Format,
+    date_filter,
+    _query,
+)
 
 
 class TimeSeriesAnalytics:
@@ -21,7 +25,8 @@ class TimeSeriesAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 90,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Daily revenue with N-day simple moving average."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -58,6 +63,7 @@ class TimeSeriesAnalytics:
             ORDER BY date DESC
         """,
             dp + sp,
+            fmt=fmt,
         )
 
     def week_over_week_growth(
@@ -65,7 +71,8 @@ class TimeSeriesAnalytics:
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 90,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Daily revenue with week-over-week growth rate."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -94,13 +101,15 @@ class TimeSeriesAnalytics:
             ORDER BY date DESC
         """,
             dp,
+            fmt=fmt,
         )
 
     def monthly_summary(
         self,
         months: int = 12,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Monthly revenue, transaction count, unique customers, average ticket."""
         sf = ""
         sp: list = []
@@ -140,6 +149,7 @@ class TimeSeriesAnalytics:
             LIMIT ?
         """,
             sp + [months],
+            fmt=fmt,
         )
 
     def day_over_day(
@@ -148,7 +158,8 @@ class TimeSeriesAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Daily revenue with day-over-day change."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -184,4 +195,5 @@ class TimeSeriesAnalytics:
             ORDER BY date DESC
         """,
             dp + sp,
+            fmt=fmt,
         )

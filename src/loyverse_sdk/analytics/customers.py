@@ -7,7 +7,13 @@ from typing import Optional
 import duckdb
 import polars as pl
 
-from loyverse_sdk.analytics._base import date_filter, _query, _scalar
+from loyverse_sdk.analytics._base import (
+    Format,
+    date_filter,
+    _query,
+    _scalar,
+    _scalar_to_output,
+)
 
 
 class CustomerAnalytics:
@@ -20,7 +26,8 @@ class CustomerAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Count of new vs returning customers per day."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -50,9 +57,14 @@ class CustomerAnalytics:
             ORDER BY date DESC
         """,
             dp + sp,
+            fmt=fmt,
         )
 
-    def rfm_analysis(self, as_of_date: Optional[str] = None) -> pl.DataFrame:
+    def rfm_analysis(
+        self,
+        as_of_date: Optional[str] = None,
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """RFM (Recency, Frequency, Monetary) scoring for all customers.
 
         Returns a DataFrame with: customer_id, name, recency_days, frequency,
@@ -109,6 +121,7 @@ class CustomerAnalytics:
             FROM scored
             ORDER BY rfm_cell DESC
         """,
+            fmt=fmt,
         )
 
     def top_customers(
@@ -118,7 +131,8 @@ class CustomerAnalytics:
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
         n: int = 10,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Top N customers by total spend."""
         df, dp = date_filter("r.receipt_date", date_start, date_end, days)
 
@@ -146,6 +160,7 @@ class CustomerAnalytics:
             LIMIT ?
         """,
             dp + sp + [n],
+            fmt=fmt,
         )
 
     def unique_customers(
@@ -154,7 +169,8 @@ class CustomerAnalytics:
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
         store_id: Optional[str] = None,
-    ) -> int:
+        fmt: Format = "dataframe",
+    ) -> int | str:
         """Count of distinct customers in the period."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -175,17 +191,21 @@ class CustomerAnalytics:
         """,
             dp + sp,
         )
-        return int(result or 0)
+        raw = int(result or 0)
+        if fmt == "dataframe":
+            return raw
+        return _scalar_to_output(raw, fmt, "unique_customers")
 
     def retention_rate(
         self,
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 30,
-    ) -> float:
+        fmt: Format = "dataframe",
+    ) -> float | str:
         """Percentage of customers who visited more than once in the period."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
-        return (
+        raw = (
             _scalar(
                 self._conn,
                 f"""
@@ -208,13 +228,17 @@ class CustomerAnalytics:
             )
             or 0
         )
+        if fmt == "dataframe":
+            return raw
+        return _scalar_to_output(raw, fmt, "retention_rate")
 
     def customer_visit_distribution(
         self,
         date_start: Optional[datetime | str] = None,
         date_end: Optional[datetime | str] = None,
         days: Optional[int] = 365,
-    ) -> pl.DataFrame:
+        fmt: Format = "dataframe",
+    ) -> pl.DataFrame | str:
         """Distribution of visit counts across the customer base."""
         df, dp = date_filter("receipt_date", date_start, date_end, days)
 
@@ -240,4 +264,5 @@ class CustomerAnalytics:
             ORDER BY visits
         """,
             dp,
+            fmt=fmt,
         )

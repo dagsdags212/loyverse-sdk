@@ -20,11 +20,11 @@ def _make_item_response(data: dict) -> MagicMock:
     return obj
 
 
-def _make_analytics_df(rows: list[dict]) -> MagicMock:
-    """Build a mock Polars DataFrame for analytics calls."""
-    df = MagicMock(spec=pl.DataFrame)
-    df.to_dicts.return_value = rows
-    return df
+def _make_analytics_json(rows: list[dict]) -> str:
+    """Build a JSON string for analytics calls with fmt='json'."""
+    import json
+
+    return json.dumps(rows)
 
 
 @pytest.fixture
@@ -108,7 +108,7 @@ def mock_analytics_engine():
     """Mock AnalyticsEngine with all sub-modules patched."""
     engine = MagicMock()
 
-    engine.revenue.total_revenue_by_month.return_value = _make_analytics_df(
+    engine.revenue.total_revenue_by_month.return_value = _make_analytics_json(
         [
             {
                 "month": "2026-05",
@@ -118,7 +118,8 @@ def mock_analytics_engine():
             },
         ]
     )
-    engine.revenue.daily_revenue.return_value = _make_analytics_df(
+    engine.revenue.total_revenue.return_value = '{"total_revenue": 1500.0}'
+    engine.revenue.daily_revenue.return_value = _make_analytics_json(
         [
             {
                 "date": "2026-05-01",
@@ -128,7 +129,7 @@ def mock_analytics_engine():
             },
         ]
     )
-    engine.revenue.revenue_by_store.return_value = _make_analytics_df(
+    engine.revenue.revenue_by_store.return_value = _make_analytics_json(
         [
             {
                 "store_name": "Main",
@@ -138,12 +139,12 @@ def mock_analytics_engine():
             },
         ]
     )
-    engine.products.top_items.return_value = _make_analytics_df(
+    engine.products.top_items.return_value = _make_analytics_json(
         [
             {"item": "Wash", "total_qty": 50, "total_revenue": 5000.0, "tx_count": 50},
         ]
     )
-    engine.products.revenue_by_category.return_value = _make_analytics_df(
+    engine.products.revenue_by_category.return_value = _make_analytics_json(
         [
             {
                 "category": "Service",
@@ -154,7 +155,7 @@ def mock_analytics_engine():
             },
         ]
     )
-    engine.customers.rfm_analysis.return_value = _make_analytics_df(
+    engine.customers.rfm_analysis.return_value = _make_analytics_json(
         [
             {
                 "customer_id": "c1",
@@ -170,7 +171,7 @@ def mock_analytics_engine():
             },
         ]
     )
-    engine.customers.top_customers.return_value = _make_analytics_df(
+    engine.customers.top_customers.return_value = _make_analytics_json(
         [
             {
                 "customer_id": "c1",
@@ -181,7 +182,8 @@ def mock_analytics_engine():
             },
         ]
     )
-    engine.employees.revenue_by_employee.return_value = _make_analytics_df(
+    engine.customers.unique_customers.return_value = '{"unique_customers": 120}'
+    engine.employees.revenue_by_employee.return_value = _make_analytics_json(
         [
             {
                 "employee": "Alice",
@@ -192,12 +194,12 @@ def mock_analytics_engine():
             },
         ]
     )
-    engine.operations.peak_hours.return_value = _make_analytics_df(
+    engine.operations.peak_hours.return_value = _make_analytics_json(
         [
             {"hour": 14, "tx_count": 30, "revenue": 6000.0, "pct_of_day": 15.0},
         ]
     )
-    engine.operations.peak_days.return_value = _make_analytics_df(
+    engine.operations.peak_days.return_value = _make_analytics_json(
         [
             {
                 "day_name": "Saturday",
@@ -207,7 +209,7 @@ def mock_analytics_engine():
             },
         ]
     )
-    engine.time_series.monthly_summary.return_value = _make_analytics_df(
+    engine.time_series.monthly_summary.return_value = _make_analytics_json(
         [
             {
                 "month": "2026-05-01",

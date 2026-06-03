@@ -120,6 +120,41 @@ def db():
             line_note TEXT, total_discount DOUBLE DEFAULT 0.0
         )
     """)
+    conn.execute("""
+        CREATE TABLE variants (
+            id TEXT PRIMARY KEY,
+            item_id TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            reference_variant_id TEXT,
+            option1_value TEXT, option2_value TEXT, option3_value TEXT,
+            barcode TEXT,
+            cost DOUBLE NOT NULL DEFAULT 0.0,
+            purchase_cost DOUBLE,
+            default_pricing_type TEXT NOT NULL DEFAULT 'VARIABLE',
+            default_price DOUBLE,
+            created_at TIMESTAMP NOT NULL,
+            updated_at TIMESTAMP NOT NULL,
+            deleted_at TIMESTAMP
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE inventory (
+            variant_id TEXT NOT NULL,
+            store_id TEXT NOT NULL,
+            in_stock INTEGER NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP NOT NULL,
+            PRIMARY KEY (variant_id, store_id)
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE variant_store (
+            variant_id TEXT NOT NULL,
+            store_id TEXT NOT NULL,
+            optimal_stock DOUBLE,
+            low_stock_threshold DOUBLE,
+            PRIMARY KEY (variant_id, store_id)
+        )
+    """)
 
     # Seed data
     now = datetime(2026, 5, 1)
@@ -155,6 +190,33 @@ def db():
     )
     conn.execute(
         "INSERT INTO customers VALUES ('cust3', 'Bob Wilson', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-01', '2026-04-01', 1, 300.0, 0.0, NULL, '2026-01-01', '2026-01-01', NULL)"
+    )
+
+    # Variants (one per item for simplicity)
+    conn.execute(
+        "INSERT INTO variants VALUES ('var-wash', 'item-wash', 'SKU-WASH', NULL, NULL, NULL, NULL, NULL, 30.0, 35.0, 'FIXED', 100.0, '2026-01-01', '2026-01-01', NULL)"
+    )
+    conn.execute(
+        "INSERT INTO variants VALUES ('var-dry', 'item-dry', 'SKU-DRY', NULL, NULL, NULL, NULL, NULL, 40.0, 45.0, 'FIXED', 125.0, '2026-01-01', '2026-01-01', NULL)"
+    )
+    conn.execute(
+        "INSERT INTO variants VALUES ('var-det', 'item-det', 'SKU-DET', NULL, NULL, NULL, NULL, NULL, 10.0, 12.0, 'FIXED', 25.0, '2026-01-01', '2026-01-01', NULL)"
+    )
+
+    # Inventory — stock on hand per variant/store
+    conn.execute(
+        "INSERT INTO inventory VALUES ('var-wash', 'store1', 10, '2026-05-01')"
+    )
+    conn.execute(
+        "INSERT INTO inventory VALUES ('var-dry', 'store1', 5, '2026-05-01')"
+    )
+    conn.execute(
+        "INSERT INTO inventory VALUES ('var-det', 'store1', 3, '2026-05-01')"
+    )
+
+    # Variant-store thresholds
+    conn.execute(
+        "INSERT INTO variant_store VALUES ('var-det', 'store1', 20, 5)"
     )
 
     # Receipts over 3 days
@@ -197,29 +259,31 @@ def db():
             ],
         )
 
-    # Line items
+    # Line items — (id, receipt_id, item_id, item_name, qty, price, total_money, variant_id, cost, cost_total)
     line_items = [
-        ("L1", "RCPT-0001", "item-wash", "Wash", 1.0, 100.0, 100.0),
-        ("L2", "RCPT-0001", "item-dry", "Dry", 1.0, 125.0, 125.0),
-        ("L3", "RCPT-0001", "item-det", "Detergent", 1.0, 25.0, 25.0),
-        ("L4", "RCPT-0002", "item-wash", "Wash", 2.0, 100.0, 200.0),
-        ("L5", "RCPT-0002", "item-det", "Detergent", 1.0, 50.0, 50.0),
-        ("L6", "RCPT-0003", "item-dry", "Dry", 1.0, 125.0, 125.0),
-        ("L7", "RCPT-0003", "item-wash", "Wash", 1.0, 100.0, 100.0),
-        ("L8", "RCPT-0003", "item-det", "Detergent", 1.0, 25.0, 25.0),
-        ("L9", "RCPT-0004", "item-dry", "Dry", 1.0, 125.0, 125.0),
-        ("L10", "RCPT-0004", "item-det", "Detergent", 2.0, 25.0, 50.0),
-        ("L11", "RCPT-0005", "item-wash", "Wash", 1.0, 100.0, 100.0),
-        ("L12", "RCPT-0005", "item-dry", "Dry", 1.0, 125.0, 125.0),
-        ("L13", "RCPT-0006", "item-wash", "Wash", 3.0, 100.0, 300.0),
-        ("L14", "RCPT-0007", "item-dry", "Dry", 1.0, 100.0, -100.0),
+        ("L1", "RCPT-0001", "item-wash", "Wash", 1.0, 100.0, 100.0, "var-wash", 30.0, 30.0),
+        ("L2", "RCPT-0001", "item-dry", "Dry", 1.0, 125.0, 125.0, "var-dry", 40.0, 40.0),
+        ("L3", "RCPT-0001", "item-det", "Detergent", 1.0, 25.0, 25.0, "var-det", 10.0, 10.0),
+        ("L4", "RCPT-0002", "item-wash", "Wash", 2.0, 100.0, 200.0, "var-wash", 30.0, 60.0),
+        ("L5", "RCPT-0002", "item-det", "Detergent", 1.0, 50.0, 50.0, "var-det", 10.0, 10.0),
+        ("L6", "RCPT-0003", "item-dry", "Dry", 1.0, 125.0, 125.0, "var-dry", 40.0, 40.0),
+        ("L7", "RCPT-0003", "item-wash", "Wash", 1.0, 100.0, 100.0, "var-wash", 30.0, 30.0),
+        ("L8", "RCPT-0003", "item-det", "Detergent", 1.0, 25.0, 25.0, "var-det", 10.0, 10.0),
+        ("L9", "RCPT-0004", "item-dry", "Dry", 1.0, 125.0, 125.0, "var-dry", 40.0, 40.0),
+        ("L10", "RCPT-0004", "item-det", "Detergent", 2.0, 25.0, 50.0, "var-det", 10.0, 20.0),
+        ("L11", "RCPT-0005", "item-wash", "Wash", 1.0, 100.0, 100.0, "var-wash", 30.0, 30.0),
+        ("L12", "RCPT-0005", "item-dry", "Dry", 1.0, 125.0, 125.0, "var-dry", 40.0, 40.0),
+        ("L13", "RCPT-0006", "item-wash", "Wash", 3.0, 100.0, 300.0, "var-wash", 30.0, 90.0),
+        ("L14", "RCPT-0007", "item-dry", "Dry", 1.0, 100.0, -100.0, "var-dry", 40.0, -40.0),
     ]
     for item in line_items:
         conn.execute(
             """INSERT INTO receipt_line_items
-               (id, receipt_id, item_id, item_name, quantity, price, total_money)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            [item[0], item[1], item[2], item[3], item[4], item[5], item[6]],
+               (id, receipt_id, item_id, item_name, quantity, price,
+                total_money, variant_id, cost, cost_total)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            [item[0], item[1], item[2], item[3], item[4], item[5],
+             item[6], item[7], item[8], item[9]],
         )
 
     # Verify data integrity

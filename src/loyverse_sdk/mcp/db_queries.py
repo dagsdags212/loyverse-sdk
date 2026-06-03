@@ -86,7 +86,9 @@ def list_from_db(
         items = [_serialize_row(row, columns) for row in rows]
         conn.close()
 
-        return json.dumps({"items": items, "count": len(items), "next_cursor": None}, default=str)
+        return json.dumps(
+            {"items": items, "count": len(items), "next_cursor": None}, default=str
+        )
     except Exception:
         return None
 
