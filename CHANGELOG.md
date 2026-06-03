@@ -12,11 +12,15 @@
   - A non-default config directory is recorded in a pointer file (`~/.config/loyverse/config_dir`) so later commands discover it automatically — no env var to export
 - Config directory resolution order: `LOYVERSE_CONFIG_DIR` env var → pointer file → default `~/.loyverse`
 - Automatic migration: a `.env` in the working directory is copied into the config dir on first run when no config exists yet
+- **Incremental sync** — `loyverse export` now syncs incrementally by default, fetching only records updated since the last export. Use `--force`/`-f` for a full re-export
+- MCP CRUD tools now query the local DuckDB database first when available and fresh (receipts within 2 days), falling back to the API only when the DB is missing or stale
 
 ### Changed
 - `loyverse init` writes to `<config-dir>/.loyverse.env` instead of a `.env` in the current directory
 - Bare database names (e.g. `mydata.duckdb`) resolve under `<config-dir>/db/`; explicit/absolute paths are used as-is
 - Config is loaded from the resolved config directory's `.loyverse.env` rather than the working-directory `.env`
+- **`loyverse export` now syncs incrementally by default** — use `--force`/`-f` for a full export
+- `loyverse export --sync` flag removed; incremental is the default, `--force` replaces the old full-export default
 
 ### Fixed
 - Timestamps from the Loyverse API (UTC) were not converted to local timezone when timezone-aware. The validator now unconditionally converts all `created_at`, `updated_at`, and `deleted_at` fields to the configured `TIMEZONE` (default `Asia/Manila`). Previously, only naive datetimes were adjusted — UTC-aware timestamps from the API passed through unchanged.

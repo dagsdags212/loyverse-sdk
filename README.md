@@ -116,8 +116,9 @@ loyverse delete categories <ID> --yes
 loyverse get customers <ID>
 loyverse get receipts <ID> --format table
 
-# Export to DuckDB for analytics (uses LOYVERSE_DB_PATH by default)
+# Export to DuckDB for analytics (incremental by default; use --force for full)
 loyverse export
+loyverse export --force
 loyverse export mydata.duckdb --resource receipts
 loyverse export --created-at-min 2024-01-01
 
@@ -674,7 +675,7 @@ python examples/export_flat_files.py
 
 The SDK includes powerful export functionality to save all your Loyverse data to a local DuckDB database for analytics, reporting, and data warehousing.
 
-The `loyverse export` CLI command and `export_to_duckdb()` method use the configured database path from `LOYVERSE_DB_PATH` (default: `loyverse.db`) unless overridden.
+The `loyverse export` CLI command syncs **incrementally by default** — fetching only records updated since the last export. Use `--force`/`-f` for a full re-export. The `export_to_duckdb()` SDK method always performs a full export.
 
 ### Why DuckDB?
 

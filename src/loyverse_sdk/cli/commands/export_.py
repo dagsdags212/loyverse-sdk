@@ -50,14 +50,17 @@ def export_resources(
         "-q",
         help="Suppress progress display",
     ),
-    sync: bool = typer.Option(
+    force: bool = typer.Option(
         False,
-        "--sync",
-        "-s",
-        help="Incremental sync: only fetch records updated since the last export",
+        "--force",
+        "-f",
+        help="Full export from scratch (skip incremental sync)",
     ),
 ) -> None:
     """Export API data to a local DuckDB database for analytics.
+
+    By default performs an incremental sync — only fetches records updated
+    since the last export. Use --force for a full export.
 
     \b
     Examples:
@@ -65,7 +68,7 @@ def export_resources(
         loyverse export mydata.duckdb
         loyverse export --resource receipts
         loyverse export --created-at-min 2024-01-01
-        loyverse export --sync
+        loyverse export --force
     """
     db_path = str(resolve_db_path(db_path or config.LOYVERSE_DB_PATH))
     resources: list[str] | None = None
@@ -101,7 +104,10 @@ def export_resources(
 
     async def _run(client: LoyverseClient) -> None:
         try:
-            if sync:
+            do_full = force or created_at_min is not None or created_at_max is not None
+            if do_full:
+                counts = await client.export_to_duckdb(**kwargs)
+            else:
                 counts = await client.sync_to_duckdb(
                     db_path=db_path,
                     resources=resources,
@@ -109,13 +115,11 @@ def export_resources(
                     show_progress=not quiet,
                     create_indexes=not no_indexes,
                 )
-            else:
-                counts = await client.export_to_duckdb(**kwargs)
         except ExportError as e:
             console.print(f"[red]Export failed: {e}[/red]")
             raise typer.Exit(1)
 
-        verb = "Sync" if sync else "Export"
+        verb = "Export" if do_full else "Sync"
         total = sum(counts.values())
         console.print(
             f"\n[bold green]{verb} complete: {total:,} records "
