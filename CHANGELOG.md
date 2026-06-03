@@ -18,6 +18,9 @@
 - Bare database names (e.g. `mydata.duckdb`) resolve under `<config-dir>/db/`; explicit/absolute paths are used as-is
 - Config is loaded from the resolved config directory's `.loyverse.env` rather than the working-directory `.env`
 
+### Fixed
+- Timestamps from the Loyverse API (UTC) were not converted to local timezone when timezone-aware. The validator now unconditionally converts all `created_at`, `updated_at`, and `deleted_at` fields to the configured `TIMEZONE` (default `Asia/Manila`). Previously, only naive datetimes were adjusted — UTC-aware timestamps from the API passed through unchanged.
+
 ## [0.4.0] — 2026-06-02
 
 ### Added

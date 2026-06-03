@@ -20,31 +20,26 @@ class Base(BaseModel):
 
     @model_validator(mode="after")
     def validate_timestamps(self) -> "Base":
-        """Ensure timestamps are properly set."""
-        # Set defaults if timestamps are None (API may return null values)
+        """Ensure timestamps are properly set and converted to local timezone."""
         now = datetime.now()
         if self.created_at is None:
             self.created_at = now
         if self.updated_at is None:
             self.updated_at = now
 
-        # Convert UTC to local timezone
-        if self.created_at or self.updated_at or self.deleted_at:
-            _tz = config.TIMEZONE if config.TIMEZONE else "Asia/Manila"
-            local_tz = pytz.timezone(_tz)
+        _tz = config.TIMEZONE if config.TIMEZONE else "Asia/Manila"
+        local_tz = pytz.timezone(_tz)
 
-            if self.created_at and self.created_at.tzinfo is None:
-                self.created_at = self.created_at.replace(tzinfo=pytz.utc).astimezone(
-                    local_tz
-                )
-            if self.updated_at and self.updated_at.tzinfo is None:
-                self.updated_at = self.updated_at.replace(tzinfo=pytz.utc).astimezone(
-                    local_tz
-                )
-            if self.deleted_at and self.deleted_at.tzinfo is None:
-                self.deleted_at = self.deleted_at.replace(tzinfo=pytz.utc).astimezone(
-                    local_tz
-                )
+        def _to_local(dt: datetime | None) -> datetime | None:
+            if dt is None:
+                return None
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=pytz.utc)
+            return dt.astimezone(local_tz)
+
+        self.created_at = _to_local(self.created_at)
+        self.updated_at = _to_local(self.updated_at)
+        self.deleted_at = _to_local(self.deleted_at)
 
         return self
 
