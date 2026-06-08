@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Any
-from pydantic import BaseModel, Field, field_validator, field_serializer
+
+from pydantic import BaseModel, Field, field_validator
+
 from loyverse_sdk.models.common import BaseListQuery
 
 
@@ -41,6 +43,7 @@ class Shift(BaseModel):
     def utc_to_local(cls, value: datetime | None) -> datetime | None:
         if value:
             import pytz
+
             from loyverse_sdk.core.config import config
 
             _tz = config.TIMEZONE if config.TIMEZONE else "Asia/Manila"

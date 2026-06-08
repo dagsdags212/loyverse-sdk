@@ -5,16 +5,18 @@ Tests endpoint structure, method contracts, and filter parameter forwarding
 without real API calls.
 """
 
-import pytest
 import inspect
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from loyverse_sdk.endpoints.base import BaseEndpoint
 from loyverse_sdk.endpoints.inventory import InventoryEndpoint
 from loyverse_sdk.endpoints.mixins import (
     ListMixin,
-    RetrieveMixin,
     PaginationMixin,
+    RetrieveMixin,
 )
-from loyverse_sdk.endpoints.base import BaseEndpoint
 
 
 class TestInventoryEndpointStructure:

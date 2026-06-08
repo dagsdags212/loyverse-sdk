@@ -48,10 +48,10 @@ def get_resource(
                 console.print(
                     f"[red]Cannot retrieve individual '{resource}' records.[/red]"
                 )
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
             except NotFoundError:
                 console.print(f"[red]{resource} with ID '{id}' not found.[/red]")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
 
         if fmt == "json":
             console.print(

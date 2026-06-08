@@ -1,8 +1,5 @@
 import json
-from datetime import datetime
-from uuid import uuid4
 
-import pytest
 from pydantic import BaseModel
 
 from loyverse_sdk.cli._display import build_table, flatten_for_export, items_key

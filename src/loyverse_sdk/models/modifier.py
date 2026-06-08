@@ -1,7 +1,8 @@
-from typing import List
 from uuid import UUID
+
 from pydantic import Field
-from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
+
+from loyverse_sdk.models.common import Base, BaseListQuery, Pagination
 
 
 class ModifierOption(Base):
@@ -13,8 +14,8 @@ class ModifierOption(Base):
 class Modifier(Base):
     name: str
     position: int
-    stores: List[UUID]
-    modifier_options: List[ModifierOption] = Field(default_factory=list)
+    stores: list[UUID]
+    modifier_options: list[ModifierOption] = Field(default_factory=list)
 
 
 class ModifierListResponse(Pagination):

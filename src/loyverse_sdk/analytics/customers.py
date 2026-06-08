@@ -3,16 +3,16 @@ Customer analytics — RFM segmentation, retention, top spenders.
 """
 
 from datetime import datetime
-from typing import Optional
+
 import duckdb
 import polars as pl
 
 from loyverse_sdk.analytics._base import (
     Format,
-    date_filter,
     _query,
     _scalar,
     _scalar_to_output,
+    date_filter,
 )
 
 
@@ -22,10 +22,10 @@ class CustomerAnalytics:
 
     def new_vs_returning(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Count of new vs returning customers per day."""
@@ -62,7 +62,7 @@ class CustomerAnalytics:
 
     def rfm_analysis(
         self,
-        as_of_date: Optional[str] = None,
+        as_of_date: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """RFM (Recency, Frequency, Monetary) scoring for all customers.
@@ -126,10 +126,10 @@ class CustomerAnalytics:
 
     def top_customers(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         n: int = 10,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
@@ -165,10 +165,10 @@ class CustomerAnalytics:
 
     def unique_customers(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> int | str:
         """Count of distinct customers in the period."""
@@ -198,9 +198,9 @@ class CustomerAnalytics:
 
     def retention_rate(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
         fmt: Format = "dataframe",
     ) -> float | str:
         """Percentage of customers who visited more than once in the period."""
@@ -234,9 +234,9 @@ class CustomerAnalytics:
 
     def customer_visit_distribution(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 365,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 365,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Distribution of visit counts across the customer base."""

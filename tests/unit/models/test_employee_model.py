@@ -1,8 +1,9 @@
 import random
 from datetime import datetime
 from uuid import UUID, uuid4
-from pydantic import ValidationError
+
 import pytest
+from pydantic import ValidationError
 
 from loyverse_sdk.models import Employee
 

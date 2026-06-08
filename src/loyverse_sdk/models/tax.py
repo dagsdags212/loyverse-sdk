@@ -1,14 +1,15 @@
-from typing import List
 from uuid import UUID
+
 from pydantic import Field
-from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
+
+from loyverse_sdk.models.common import Base, BaseListQuery, Pagination
 
 
 class Tax(Base):
     name: str = Field(max_length=40)
     type: str
     rate: float = Field(ge=0.0, le=100.0)
-    stores: List[UUID]
+    stores: list[UUID]
 
 
 class TaxListResponse(Pagination):

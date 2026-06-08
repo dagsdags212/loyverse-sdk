@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Any
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator, field_serializer
-from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
 
+from pydantic import BaseModel, Field, field_serializer, field_validator
+
+from loyverse_sdk.models.common import Base, BaseListQuery, Pagination
 
 # =============================================================================
 # Payment Type

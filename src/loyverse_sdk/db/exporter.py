@@ -5,16 +5,17 @@ This module orchestrates the export of all Loyverse resources to a DuckDB databa
 handling pagination, data transformation, and batch insertion.
 """
 
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, Optional
+
 import duckdb
 import polars as pl
 
 from loyverse_sdk.core.console import console
-from loyverse_sdk.db.schema_builder import create_duckdb_schema, create_indexes
 from loyverse_sdk.db.connection import DuckDBConnection, database_exists
 from loyverse_sdk.db.converters import pydantic_to_sql_dict, split_nested_data
 from loyverse_sdk.db.progress import ExportProgress
+from loyverse_sdk.db.schema_builder import create_duckdb_schema, create_indexes
 from loyverse_sdk.exceptions import ExportError
 from loyverse_sdk.models import (
     CategoryListQuery,
@@ -130,15 +131,15 @@ class DuckDBExporter:
 
     async def export_all(
         self,
-        resources: Optional[list[str]] = None,
-        created_at_min: Optional[datetime] = None,
-        created_at_max: Optional[datetime] = None,
-        updated_at_min: Optional[datetime] = None,
-        updated_at_max: Optional[datetime] = None,
+        resources: list[str] | None = None,
+        created_at_min: datetime | None = None,
+        created_at_max: datetime | None = None,
+        updated_at_min: datetime | None = None,
+        updated_at_max: datetime | None = None,
         batch_size: int = 1000,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        progress_callback: Callable[[str, int, int], None] | None = None,
         create_indexes_after: bool = True,
-        show_progress: Optional[bool] = None,
+        show_progress: bool | None = None,
     ) -> dict[str, int]:
         """
         Export all or selected resources to DuckDB.
@@ -239,7 +240,7 @@ class DuckDBExporter:
                 raise ExportError(
                     f"Failed to export {resource_name}: {e}",
                     resource_name=resource_name,
-                )
+                ) from e
 
         # Create indexes if requested
         if create_indexes_after:
@@ -273,10 +274,10 @@ class DuckDBExporter:
 
     async def sync_all(
         self,
-        resources: Optional[list[str]] = None,
+        resources: list[str] | None = None,
         batch_size: int = 1000,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None,
-        show_progress: Optional[bool] = None,
+        progress_callback: Callable[[str, int, int], None] | None = None,
+        show_progress: bool | None = None,
         create_indexes_after: bool = True,
     ) -> dict[str, int]:
         """Incremental sync: only fetch records updated since the last sync.
@@ -288,7 +289,6 @@ class DuckDBExporter:
 
         Args:
             resources: Resource names to sync (None = all).
-            batch_size: Records per transaction.
             batch_size: Records per transaction.
             progress_callback: Optional ``callback(resource, current, total)``.
             show_progress: Override instance default for progress display.
@@ -311,14 +311,17 @@ class DuckDBExporter:
         sync_meta = self.get_sync_metadata() if not schema_is_new else {}
 
         ordered_resources = [
-            r for r in RESOURCE_ORDER
+            r for r in self.RESOURCE_ORDER
             if resources is None or r in resources
         ]
 
         tracker = ExportProgress(
-            use_progress,
             total_resources=len(ordered_resources),
+            console=console,
+            enabled=use_progress,
         )
+        if tracker.enabled:
+            tracker.start()
 
         total_errors = 0
         export_counts: dict[str, int] = {}
@@ -364,7 +367,10 @@ class DuckDBExporter:
 
         if create_indexes_after:
             try:
-                self.create_indexes()
+                if tracker.enabled:
+                    console.log("[dim]Creating indexes...[/dim]")
+                self.connection.close()
+                create_indexes(self.db_path)
             except duckdb.Error as e:
                 msg = f"Failed to create indexes: {e}"
                 if tracker.enabled:
@@ -394,12 +400,12 @@ class DuckDBExporter:
     async def export_resource(
         self,
         resource_name: str,
-        created_at_min: Optional[datetime] = None,
-        created_at_max: Optional[datetime] = None,
-        updated_at_min: Optional[datetime] = None,
-        updated_at_max: Optional[datetime] = None,
+        created_at_min: datetime | None = None,
+        created_at_max: datetime | None = None,
+        updated_at_min: datetime | None = None,
+        updated_at_max: datetime | None = None,
         batch_size: int = 1000,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        progress_callback: Callable[[str, int, int], None] | None = None,
     ) -> int:
         """
         Export a single resource to DuckDB.
@@ -556,7 +562,7 @@ class DuckDBExporter:
             raise ExportError(
                 f"Failed to insert batch for {resource_name}: {e}",
                 resource_name=resource_name,
-            )
+            ) from e
 
     def _insert_records_to_table(
         self, conn: duckdb.DuckDBPyConnection, table_name: str, records: list[dict]
@@ -622,7 +628,7 @@ class DuckDBExporter:
                 raise ExportError(
                     f"Failed to insert into {table_name}: {e}. "
                     f"Fallback also failed: {fallback_error}"
-                )
+                ) from fallback_error
 
     def init_schema(self, drop_existing: bool = False) -> None:
         """
@@ -742,8 +748,8 @@ class DuckDBExporter:
         return False
 
 
-def quick_export(
-    client, db_path: str, resources: Optional[list[str]] = None, **kwargs
+async def quick_export(
+    client, db_path: str, resources: list[str] | None = None, **kwargs
 ) -> dict[str, int]:
     """
     Convenience function for quick exports.
@@ -772,6 +778,6 @@ def quick_export(
     """
     exporter = DuckDBExporter(client, db_path)
     try:
-        return exporter.export_all(resources=resources, **kwargs)
+        return await exporter.export_all(resources=resources, **kwargs)
     finally:
         exporter.close()

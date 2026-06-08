@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import typer
 
@@ -22,13 +22,15 @@ def normalize_date(value: str, *, end_of_day: bool = False) -> str:
     """
     if value in _DATE_ALIASES:
         days_back, _ = _DATE_ALIASES[value]
-        dt = datetime.now(timezone.utc) - timedelta(days=days_back)
+        dt = datetime.now(UTC) - timedelta(days=days_back)
     elif "T" not in value:
         try:
             dt = datetime.strptime(value.strip(), "%Y-%m-%d")
-        except ValueError:
-            raise typer.BadParameter(f"Invalid date: '{value}' (expected YYYY-MM-DD)")
-        dt = dt.replace(tzinfo=timezone.utc)
+        except ValueError as e:
+            raise typer.BadParameter(
+                f"Invalid date: '{value}' (expected YYYY-MM-DD)"
+            ) from e
+        dt = dt.replace(tzinfo=UTC)
     else:
         return value
 

@@ -1,10 +1,10 @@
 from loyverse_sdk.endpoints.categories import CategoriesEndpoint
 from loyverse_sdk.endpoints.customers import CustomersEndpoint
-from loyverse_sdk.endpoints.discounts import DiscountsEndpoint
 from loyverse_sdk.endpoints.devices import PosDevicesEndpoints
+from loyverse_sdk.endpoints.discounts import DiscountsEndpoint
 from loyverse_sdk.endpoints.employees import EmployeesEndpoint
-from loyverse_sdk.endpoints.items import ItemsEndpoint
 from loyverse_sdk.endpoints.inventory import InventoryEndpoint
+from loyverse_sdk.endpoints.items import ItemsEndpoint
 from loyverse_sdk.endpoints.merchant import MerchantEndpoint
 from loyverse_sdk.endpoints.modifiers import ModifiersEndpoint
 from loyverse_sdk.endpoints.payment_types import PaymentTypesEndpoint
@@ -13,5 +13,25 @@ from loyverse_sdk.endpoints.shifts import ShiftsEndpoint
 from loyverse_sdk.endpoints.stores import StoresEndpoint
 from loyverse_sdk.endpoints.suppliers import SuppliersEndpoint
 from loyverse_sdk.endpoints.taxes import TaxesEndpoint
-from loyverse_sdk.endpoints.webhooks import WebhooksEndpoint
 from loyverse_sdk.endpoints.variants import VariantsEndpoint
+from loyverse_sdk.endpoints.webhooks import WebhooksEndpoint
+
+__all__ = [
+    "CategoriesEndpoint",
+    "CustomersEndpoint",
+    "PosDevicesEndpoints",
+    "DiscountsEndpoint",
+    "EmployeesEndpoint",
+    "InventoryEndpoint",
+    "ItemsEndpoint",
+    "MerchantEndpoint",
+    "ModifiersEndpoint",
+    "PaymentTypesEndpoint",
+    "ReceiptsEndpoint",
+    "ShiftsEndpoint",
+    "StoresEndpoint",
+    "SuppliersEndpoint",
+    "TaxesEndpoint",
+    "VariantsEndpoint",
+    "WebhooksEndpoint",
+]

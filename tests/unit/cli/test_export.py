@@ -16,9 +16,10 @@ def mock_run_async():
 
 
 class TestExportCommandValidation:
-    def test_requires_db_path(self):
+    def test_db_path_is_optional(self, mock_run_async):
+        # db_path defaults to config.LOYVERSE_DB_PATH when omitted
         result = runner.invoke(app, ["export"])
-        assert result.exit_code == 2
+        assert result.exit_code == 0
 
     def test_accepts_db_path(self, mock_run_async):
         result = runner.invoke(app, ["export", "test.duckdb"])

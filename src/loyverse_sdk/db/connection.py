@@ -5,9 +5,10 @@ Provides connection pooling, transaction management, and context managers
 for working with DuckDB databases.
 """
 
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, Optional
+
 import duckdb
 
 from loyverse_sdk.exceptions import ExportError
@@ -52,7 +53,7 @@ class DuckDBConnection:
         self.memory_limit = memory_limit
         self.threads = threads
         self.read_only = read_only
-        self._conn: Optional[duckdb.DuckDBPyConnection] = None
+        self._conn: duckdb.DuckDBPyConnection | None = None
 
     def connect(self) -> duckdb.DuckDBPyConnection:
         """

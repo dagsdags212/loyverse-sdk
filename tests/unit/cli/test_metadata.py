@@ -1,12 +1,12 @@
 from loyverse_sdk.cli._metadata import (
-    get_listable_resources,
     get_creatable_resources,
-    get_updatable_resources,
     get_deletable_resources,
+    get_endpoint_classes,
+    get_item_model,
+    get_listable_resources,
     get_required_fields,
     get_response_model,
-    get_item_model,
-    get_endpoint_classes,
+    get_updatable_resources,
     make_create_epilog,
 )
 

@@ -1,6 +1,8 @@
 from datetime import datetime
+
 from pydantic import BaseModel, Field, field_validator
-from loyverse_sdk.models.common import Pagination, BaseListQuery
+
+from loyverse_sdk.models.common import BaseListQuery, Pagination
 
 
 class Inventory(BaseModel):
@@ -13,6 +15,7 @@ class Inventory(BaseModel):
     def utc_to_local(cls, value: datetime) -> datetime:
         if value:
             import pytz
+
             from loyverse_sdk.core.config import config
 
             _tz = config.TIMEZONE if config.TIMEZONE else "Asia/Manila"

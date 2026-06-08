@@ -1,11 +1,12 @@
-from uuid import uuid4
 import random
 from datetime import datetime
+from uuid import uuid4
+
 import pytest
 from pydantic import ValidationError
 
-from loyverse_sdk.models.discount import DiscountType
 from loyverse_sdk.models import Discount
+from loyverse_sdk.models.discount import DiscountType
 
 
 class TestDiscountModel:

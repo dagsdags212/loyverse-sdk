@@ -2,7 +2,6 @@ from loyverse_sdk.endpoints.base import BaseEndpoint
 from loyverse_sdk.endpoints.mixins import (
     CrudMixin,
     ListMixin,
-    RetrieveMixin,
     PaginationMixin,
 )
 from loyverse_sdk.models import Discount, DiscountListQuery, DiscountListResponse

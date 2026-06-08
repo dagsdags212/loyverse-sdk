@@ -1,8 +1,9 @@
 import os
-from dotenv import load_dotenv
-import pytest
-from loyverse_sdk.client import LoyverseClient
 
+import pytest
+from dotenv import load_dotenv
+
+from loyverse_sdk.client import LoyverseClient
 
 load_dotenv()
 

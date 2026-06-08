@@ -1,7 +1,6 @@
 import asyncio
 from unittest import mock
 
-import pytest
 from typer.testing import CliRunner
 
 from loyverse_sdk.cli.main import app

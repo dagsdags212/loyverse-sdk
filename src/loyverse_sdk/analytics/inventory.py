@@ -6,16 +6,16 @@ Uses ``inventory.in_stock``, ``receipt_line_items.quantity``, and
 """
 
 from datetime import datetime
-from typing import Optional
+
 import duckdb
 import polars as pl
 
 from loyverse_sdk.analytics._base import (
     Format,
-    date_filter,
     _query,
     _scalar,
     _scalar_to_output,
+    date_filter,
 )
 
 
@@ -25,10 +25,10 @@ class InventoryAnalytics:
 
     def turnover(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         n: int = 20,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
@@ -99,7 +99,7 @@ class InventoryAnalytics:
 
     def stock_value(
         self,
-        store_id: Optional[str] = None,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Total inventory value = current stock × unit cost per variant.
@@ -134,7 +134,7 @@ class InventoryAnalytics:
 
     def total_inventory_value(
         self,
-        store_id: Optional[str] = None,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> float | str:
         """Total inventory value across all items as a single scalar."""
@@ -191,7 +191,7 @@ class InventoryAnalytics:
 
     def low_stock(
         self,
-        store_id: Optional[str] = None,
+        store_id: str | None = None,
         threshold: int = 5,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
@@ -242,9 +242,9 @@ class InventoryAnalytics:
 
     def items_never_sold(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Items with stock on hand that have not sold in the period.

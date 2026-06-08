@@ -3,17 +3,17 @@ Revenue analytics — daily totals, growth rates, average transaction values.
 """
 
 from datetime import datetime
-from typing import Optional
+
 import duckdb
 import polars as pl
 
 from loyverse_sdk.analytics._base import (
     Format,
-    date_filter,
-    store_filter,
     _query,
     _scalar,
     _scalar_to_output,
+    date_filter,
+    store_filter,
 )
 
 
@@ -23,10 +23,10 @@ class RevenueAnalytics:
 
     def daily_revenue(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Daily revenue, transaction count, and average ticket.
@@ -56,9 +56,9 @@ class RevenueAnalytics:
 
     def revenue_by_store(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Revenue and transaction counts broken down by store."""
@@ -87,7 +87,7 @@ class RevenueAnalytics:
         self,
         period: str = "month",
         months: int = 12,
-        store_id: Optional[str] = None,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Period-over-period revenue with growth rate.
@@ -132,10 +132,10 @@ class RevenueAnalytics:
 
     def total_revenue(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> float | str:
         """Total revenue as a single scalar."""
@@ -160,10 +160,10 @@ class RevenueAnalytics:
 
     def total_revenue_by_month(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Total revenue broken down by month.
@@ -193,9 +193,9 @@ class RevenueAnalytics:
 
     def refund_rate(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Refund totals and rate as a percentage of sales."""

@@ -38,13 +38,13 @@ def delete_resource(
                     record = await endpoint.retrieve(id=id)
                 except NotFoundError:
                     console.print(f"[red]{resource} with ID '{id}' not found.[/red]")
-                    raise typer.Exit(1)
+                    raise typer.Exit(1) from None
                 except AttributeError:
                     console.print(
                         f"[red]Cannot fetch individual '{resource}' "
                         f"records for confirmation.[/red]"
                     )
-                    raise typer.Exit(1)
+                    raise typer.Exit(1) from None
 
             console.print(
                 f"\n[bold red]Delete [cyan]{resource}[/cyan] "

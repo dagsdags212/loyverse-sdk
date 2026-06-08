@@ -5,9 +5,10 @@ Creates an in-memory DuckDB database pre-populated with a small set of
 representative data so analytics queries can be verified deterministically.
 """
 
-import pytest
-import duckdb
 from datetime import datetime
+
+import duckdb
+import pytest
 
 
 @pytest.fixture
@@ -157,7 +158,6 @@ def db():
     """)
 
     # Seed data
-    now = datetime(2026, 5, 1)
     conn.execute(
         "INSERT INTO categories VALUES ('cat-svc', 'Service', 'BLUE', '2026-01-01', '2026-01-01', NULL)"
     )
@@ -234,7 +234,6 @@ def db():
         total = 250.0 if rtype == "SALE" else -100.0
         tip = 10.0 if rtype == "SALE" and i % 2 == 0 else 0.0
         discount = 25.0 if i == 0 else 0.0
-        cancelled = None
         cust = f"cust{i % 3 + 1}" if rtype == "SALE" else None
         emp = "emp1" if i % 2 == 0 else "emp2"
         conn.execute(

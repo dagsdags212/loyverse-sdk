@@ -1,12 +1,14 @@
-from uuid import UUID, uuid4
 from datetime import datetime
-from enum import Enum, unique
-from pydantic import BaseModel, Field, field_validator, field_serializer
-from loyverse_sdk.models.common import Pagination, BaseListQuery
+from enum import StrEnum, unique
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field, field_serializer, field_validator
+
+from loyverse_sdk.models.common import BaseListQuery, Pagination
 
 
 @unique
-class CategoryColor(str, Enum):
+class CategoryColor(StrEnum):
     GREY = "GREY"
     RED = "RED"
     PINK = "PINK"

@@ -4,17 +4,15 @@ Unit tests for the exporters package.
 Tests the FlatFileExporter class and convenience functions for CSV and Parquet export.
 """
 
-import json
 import tempfile
 from pathlib import Path
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 import polars as pl
 import pytest
 from pydantic import BaseModel, Field
 
 from loyverse_sdk.exceptions import ExportError
-
 
 # ---------------------------------------------------------------------------
 # Test models

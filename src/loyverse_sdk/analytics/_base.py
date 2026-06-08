@@ -8,7 +8,7 @@ store filtering, and safe query execution against DuckDB.
 import json
 from datetime import datetime
 from io import StringIO
-from typing import Literal, Optional
+from typing import Literal
 
 import duckdb
 import polars as pl
@@ -18,9 +18,9 @@ Format = Literal["dataframe", "json", "csv"]
 
 def date_filter(
     column: str,
-    date_start: Optional[datetime | str] = None,
-    date_end: Optional[datetime | str] = None,
-    days: Optional[int] = None,
+    date_start: datetime | str | None = None,
+    date_end: datetime | str | None = None,
+    days: int | None = None,
 ) -> tuple[str, list]:
     """Build a parameterized date-range WHERE clause.
 
@@ -50,7 +50,7 @@ def date_filter(
     return (" AND " + " AND ".join(clauses), params)
 
 
-def store_filter(store_id: Optional[str] = None) -> tuple[str, list]:
+def store_filter(store_id: str | None = None) -> tuple[str, list]:
     """Build an optional store-id filter clause."""
     if store_id is None:
         return ("", [])
@@ -99,7 +99,7 @@ def _dict_to_output(
 def _query(
     conn: duckdb.DuckDBPyConnection,
     sql: str,
-    params: Optional[list] = None,
+    params: list | None = None,
     fmt: Format = "dataframe",
 ) -> pl.DataFrame | str:
     """Execute a parameterized SQL query and return a Polars DataFrame."""
@@ -113,7 +113,7 @@ def _query(
 def _scalar(
     conn: duckdb.DuckDBPyConnection,
     sql: str,
-    params: Optional[list] = None,
+    params: list | None = None,
     fmt: Format = "dataframe",
 ) -> float | int | None | str:
     """Execute a SQL query returning a single scalar value."""

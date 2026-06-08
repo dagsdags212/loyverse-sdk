@@ -24,17 +24,17 @@ Example:
 """
 
 from pathlib import Path
-from typing import Optional
+
 import duckdb
 
-from loyverse_sdk.analytics.revenue import RevenueAnalytics
-from loyverse_sdk.analytics.products import ProductAnalytics
 from loyverse_sdk.analytics.customers import CustomerAnalytics
 from loyverse_sdk.analytics.employees import EmployeeAnalytics
-from loyverse_sdk.analytics.operations import OperationsAnalytics
-from loyverse_sdk.analytics.time_series import TimeSeriesAnalytics
-from loyverse_sdk.analytics.profitability import ProfitabilityAnalytics
 from loyverse_sdk.analytics.inventory import InventoryAnalytics
+from loyverse_sdk.analytics.operations import OperationsAnalytics
+from loyverse_sdk.analytics.products import ProductAnalytics
+from loyverse_sdk.analytics.profitability import ProfitabilityAnalytics
+from loyverse_sdk.analytics.revenue import RevenueAnalytics
+from loyverse_sdk.analytics.time_series import TimeSeriesAnalytics
 
 
 class AnalyticsEngine:

@@ -2,8 +2,8 @@
 Unit tests for loyverse_sdk.models.inventory module.
 """
 
-import pytest
 from datetime import datetime
+
 from loyverse_sdk.models.inventory import Inventory, InventoryListResponse
 
 

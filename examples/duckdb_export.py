@@ -31,7 +31,7 @@ async def example_full_export():
     counts = await client.export_to_duckdb("loyverse.duckdb")
 
     print("\n✓ Export completed!")
-    print(f"\nRecords exported:")
+    print("\nRecords exported:")
     for resource, count in sorted(counts.items()):
         print(f"  {resource:20} {count:>6,} records")
 
