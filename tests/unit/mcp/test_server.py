@@ -1,5 +1,7 @@
 """Smoke tests for MCP server registration."""
 
+from unittest import mock
+
 import pytest
 
 
@@ -61,3 +63,62 @@ class TestServerRegistration:
             assert ann.destructiveHint is False, (
                 f"Tool '{name}' is missing destructiveHint=False"
             )
+
+
+class TestLifespan:
+    """Exercise the FastMCP ``lifespan`` async context manager wiring."""
+
+    @pytest.mark.asyncio
+    async def test_lifespan_yields_client_engine_and_db_path(self):
+        from loyverse_sdk.mcp import server
+
+        fake_client = mock.MagicMock()
+        fake_client.close = mock.AsyncMock()
+        fake_engine = mock.MagicMock()
+
+        with (
+            mock.patch.object(
+                server, "LoyverseClient", return_value=fake_client
+            ) as client_cls,
+            mock.patch.object(
+                server, "resolve_db_path", return_value="/tmp/loyverse.duckdb"
+            ),
+            mock.patch(
+                "loyverse_sdk.analytics.AnalyticsEngine",
+                return_value=fake_engine,
+            ),
+        ):
+            async with server.lifespan(server.mcp) as state:
+                assert state["client"] is fake_client
+                assert state["engine"] is fake_engine
+                assert state["db_path"] == "/tmp/loyverse.duckdb"
+
+        client_cls.assert_called_once()
+        # Resources are torn down after the context exits.
+        fake_engine.close.assert_called_once()
+        fake_client.close.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_lifespan_tolerates_engine_init_failure(self):
+        from loyverse_sdk.mcp import server
+
+        fake_client = mock.MagicMock()
+        fake_client.close = mock.AsyncMock()
+
+        with (
+            mock.patch.object(server, "LoyverseClient", return_value=fake_client),
+            mock.patch.object(
+                server, "resolve_db_path", return_value="/tmp/loyverse.duckdb"
+            ),
+            mock.patch(
+                "loyverse_sdk.analytics.AnalyticsEngine",
+                side_effect=RuntimeError("no db"),
+            ),
+        ):
+            async with server.lifespan(server.mcp) as state:
+                # Engine init failure is swallowed; engine is None.
+                assert state["engine"] is None
+                assert state["client"] is fake_client
+
+        # No engine to close, but the client is still closed.
+        fake_client.close.assert_awaited_once()

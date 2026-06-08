@@ -4,14 +4,14 @@ Unit tests for loyverse_sdk.db.exporter module.
 Tests DuckDBExporter class with mocked data and API calls.
 """
 
-import pytest
-import tempfile
 import os
+import tempfile
 from datetime import datetime
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from typing import AsyncGenerator
+from unittest.mock import AsyncMock, Mock
 
-from loyverse_sdk.db.exporter import DuckDBExporter, quick_export
+import pytest
+
+from loyverse_sdk.db.exporter import DuckDBExporter
 from loyverse_sdk.exceptions import ExportError
 
 
@@ -275,6 +275,9 @@ class TestExportAll:
 
         # Export should create the database and schema
         counts = await exporter.export_all(resources=["categories"])
+
+        # Export ran for the requested resource (zero rows from empty iterator)
+        assert counts == {"categories": 0}
 
         # Verify database file was created
         assert os.path.exists(exporter.db_path)
@@ -734,3 +737,84 @@ class TestContextManager:
 
         # Connection should be closed after context exit
         # (Can't easily test this without accessing internals)
+
+
+def _category_endpoint(cat_id: str = "cat1"):
+    """Build a mock endpoint whose iter_all yields one category record."""
+
+    async def mock_iter(*args, **kwargs):
+        yield Mock(
+            model_dump=lambda: {
+                "id": cat_id,
+                "name": f"Category {cat_id}",
+                "color": "RED",
+                "created_at": datetime.now(),
+                "updated_at": datetime.now(),
+                "deleted_at": None,
+            }
+        )
+
+    endpoint = Mock()
+    endpoint.iter_all = mock_iter
+    return endpoint
+
+
+class TestSyncAll:
+    """Test sync_all — the default ``loyverse export`` (incremental) path.
+
+    Regression coverage: sync_all previously referenced a bare ``RESOURCE_ORDER``
+    (NameError), passed ``total_resources`` to ExportProgress both positionally
+    and by keyword (TypeError), never called ``tracker.start()``, and invoked a
+    non-existent ``self.create_indexes()`` (AttributeError). It could not run.
+    """
+
+    @pytest.mark.asyncio
+    async def test_sync_all_full_export_on_new_database(self, exporter, mock_client):
+        mock_client.endpoints = {"categories": _category_endpoint()}
+
+        counts = await exporter.sync_all(
+            resources=["categories"], show_progress=False
+        )
+
+        assert counts == {"categories": 1}
+        assert os.path.exists(exporter.db_path)
+
+    @pytest.mark.asyncio
+    async def test_sync_all_records_metadata_and_supports_second_run(
+        self, exporter, mock_client
+    ):
+        mock_client.endpoints = {"categories": _category_endpoint()}
+
+        # First run creates the schema and writes sync metadata (full).
+        await exporter.sync_all(resources=["categories"], show_progress=False)
+
+        # Second run sees an existing database and performs an incremental sync.
+        counts = await exporter.sync_all(
+            resources=["categories"], show_progress=False
+        )
+        assert counts == {"categories": 1}
+
+        meta = exporter.get_sync_metadata()
+        assert "categories" in meta
+        assert meta["categories"]["sync_type"] == "incremental"
+
+
+class TestQuickExport:
+    """Test the quick_export convenience function.
+
+    Regression coverage: quick_export was a sync ``def`` that returned an
+    un-awaited coroutine while its ``finally`` closed the connection.
+    """
+
+    @pytest.mark.asyncio
+    async def test_quick_export_returns_counts(self, mock_client, temp_db):
+        from loyverse_sdk.db.exporter import quick_export
+
+        mock_client.endpoints = {"categories": _category_endpoint()}
+
+        counts = await quick_export(
+            mock_client, temp_db, resources=["categories"], show_progress=False
+        )
+
+        assert counts == {"categories": 1}
+        assert os.path.exists(temp_db)

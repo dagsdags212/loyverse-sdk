@@ -4,40 +4,15 @@ Unit tests for loyverse_sdk.db.schema_builder module.
 Tests table creation, foreign keys, indexes, and schema initialization.
 """
 
-import pytest
-import duckdb
-import tempfile
 import os
-from pathlib import Path
+import tempfile
+
+import duckdb
+import pytest
 
 from loyverse_sdk.db.schema_builder import (
     create_duckdb_schema,
     create_indexes,
-    CategoryDB,
-    StoreDB,
-    SupplierDB,
-    TaxDB,
-    ModifierDB,
-    DiscountDB,
-    EmployeeDB,
-    CustomerDB,
-    PosDeviceDB,
-    PaymentTypeDB,
-    ItemDB,
-    VariantDB,
-    ReceiptDB,
-    MerchantDB,
-    ReceiptLineItemDB,
-    ModifierOptionDB,
-    EmployeeStoreDB,
-    ItemTaxDB,
-    ItemModifierDB,
-    ModifierStoreDB,
-    TaxStoreDB,
-    DiscountStoreDB,
-    PaymentTypeStoreDB,
-    VariantStoreDB,
-    SyncMetadataDB,
 )
 
 

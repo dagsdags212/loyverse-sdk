@@ -4,26 +4,22 @@ Unit tests for loyverse_sdk.db.converters module.
 Tests Pydantic model conversion, UUID handling, and nested data splitting.
 """
 
-import pytest
 from datetime import datetime
-from uuid import uuid4, UUID
+from uuid import uuid4
+
+import pytest
 
 from loyverse_sdk.db.converters import (
-    pydantic_to_sql_dict,
-    split_nested_data,
+    _split_employees,
+    _split_items,
+    _split_receipts,
     convert_uuid_fields,
     extract_id,
-    validate_required_fields,
     get_resource_required_fields,
     prepare_record_for_insert,
-    _split_items,
-    _split_employees,
-    _split_receipts,
-    _split_modifiers,
-    _split_taxes,
-    _split_discounts,
-    _split_payment_types,
-    _split_variants,
+    pydantic_to_sql_dict,
+    split_nested_data,
+    validate_required_fields,
 )
 
 

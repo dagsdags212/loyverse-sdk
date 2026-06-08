@@ -5,11 +5,12 @@ Covers BaseListQuery validation (date ranges, limit bounds) and
 endpoint-specific query model field serialization via to_params().
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
+
 import pytest
 from pydantic import ValidationError
 
-from loyverse_sdk.models.common import BaseListQuery
+from loyverse_sdk.core.config import config
 from loyverse_sdk.models import (
     CategoryListQuery,
     CustomerListQuery,
@@ -27,9 +28,8 @@ from loyverse_sdk.models import (
     VariantListQuery,
     WebhookListQuery,
 )
-from loyverse_sdk.models.webhook import WebhookType, WebhookStatus
-from loyverse_sdk.core.config import config
-
+from loyverse_sdk.models.common import BaseListQuery
+from loyverse_sdk.models.webhook import WebhookStatus, WebhookType
 
 # =============================================================================
 # BaseListQuery tests

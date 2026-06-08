@@ -2,10 +2,10 @@
 Unit tests for loyverse_sdk.models.shift module.
 """
 
-import pytest
 from datetime import datetime
-from pydantic import Field
 from typing import Any
+
+from pydantic import Field
 
 
 # Inline Shift and ShiftListResponse for testing since we can't import the full package

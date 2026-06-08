@@ -7,15 +7,12 @@ correctly delegate to the exporters package functions.
 
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 import polars as pl
-import pytest
 from pydantic import BaseModel, Field
 
 from loyverse_sdk import LoyverseClient
-
 
 # ---------------------------------------------------------------------------
 # Test models

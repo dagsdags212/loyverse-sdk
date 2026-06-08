@@ -44,7 +44,6 @@ class TestDayOverDay:
 
 class TestEngineIntegration:
     def test_engine_context_manager(self, db):
-        from loyverse_sdk.analytics.engine import AnalyticsEngine
 
         # Cannot test with :memory: path, but module import works
         pass

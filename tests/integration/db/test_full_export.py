@@ -5,15 +5,14 @@ These tests verify end-to-end export functionality with either real API calls
 or comprehensive mocks.
 """
 
-import pytest
 import os
 import tempfile
+
 import duckdb
-from datetime import datetime
+import pytest
 
 from loyverse_sdk import LoyverseClient
 from loyverse_sdk.db.exporter import DuckDBExporter
-from loyverse_sdk.exceptions import ExportError
 
 
 @pytest.fixture
