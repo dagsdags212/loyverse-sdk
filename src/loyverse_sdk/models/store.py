@@ -1,5 +1,6 @@
 from pydantic import Field
-from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
+
+from loyverse_sdk.models.common import Base, BaseListQuery, Pagination
 
 
 class Store(Base):

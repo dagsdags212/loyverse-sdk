@@ -23,7 +23,6 @@ import os
 import shutil
 from pathlib import Path
 
-
 DEFAULT_DB_NAME = "loyverse.db"
 ENV_FILENAME = ".loyverse.env"
 DEFAULT_CONFIG_DIR = Path.home() / ".loyverse"

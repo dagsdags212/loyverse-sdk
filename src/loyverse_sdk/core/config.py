@@ -3,7 +3,6 @@ from pydantic_settings import BaseSettings
 
 from loyverse_sdk.core.paths import env_file, migrate_legacy_env
 
-
 migrate_legacy_env()
 load_dotenv(env_file())
 

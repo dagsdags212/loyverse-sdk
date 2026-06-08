@@ -117,7 +117,7 @@ def export_resources(
                 )
         except ExportError as e:
             console.print(f"[red]Export failed: {e}[/red]")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
         verb = "Export" if do_full else "Sync"
         total = sum(counts.values())

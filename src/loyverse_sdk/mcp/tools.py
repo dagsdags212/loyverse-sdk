@@ -1,13 +1,13 @@
 """Read-only MCP tools that wrap Loyverse SDK list and retrieve endpoints."""
 
 import json
-from typing import Optional
 
 from mcp.server.fastmcp import Context
 from pydantic import BaseModel, ConfigDict, Field
 
 from loyverse_sdk.exceptions import LoyverseSDKError
 from loyverse_sdk.mcp.db_queries import get_from_db, is_db_fresh, list_from_db
+from loyverse_sdk.mcp.server import mcp
 from loyverse_sdk.models import (
     CategoryListQuery,
     CustomerListQuery,
@@ -19,8 +19,6 @@ from loyverse_sdk.models import (
     ShiftListQuery,
     StoreListQuery,
 )
-from loyverse_sdk.mcp.server import mcp
-
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -97,23 +95,23 @@ def _try_db_get(ctx: Context, table: str, resource_id: str) -> str | None:
 class _BaseListInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    limit: Optional[int] = Field(
+    limit: int | None = Field(
         default=50, ge=1, le=250, description="Number of records to return (1–250)"
     )
-    cursor: Optional[str] = Field(
+    cursor: str | None = Field(
         default=None, description="Pagination cursor from a previous response"
     )
-    created_at_min: Optional[str] = Field(
+    created_at_min: str | None = Field(
         default=None,
         description="ISO 8601 lower bound on created_at, e.g. 2024-01-01T00:00:00Z",
     )
-    created_at_max: Optional[str] = Field(
+    created_at_max: str | None = Field(
         default=None, description="ISO 8601 upper bound on created_at"
     )
-    updated_at_min: Optional[str] = Field(
+    updated_at_min: str | None = Field(
         default=None, description="ISO 8601 lower bound on updated_at"
     )
-    updated_at_max: Optional[str] = Field(
+    updated_at_max: str | None = Field(
         default=None, description="ISO 8601 upper bound on updated_at"
     )
 
@@ -128,20 +126,20 @@ def _base_params(params: _BaseListInput) -> dict:
 
 
 class ListReceiptsInput(_BaseListInput):
-    receipt_numbers: Optional[str] = Field(
+    receipt_numbers: str | None = Field(
         default=None,
         description="Comma-separated receipt numbers to fetch, e.g. 'R-1001,R-1002'",
     )
-    since_receipt_number: Optional[str] = Field(
+    since_receipt_number: str | None = Field(
         default=None, description="Return receipts with receipt_number > this value"
     )
-    before_receipt_number: Optional[str] = Field(
+    before_receipt_number: str | None = Field(
         default=None, description="Return receipts with receipt_number < this value"
     )
-    store_id: Optional[str] = Field(
+    store_id: str | None = Field(
         default=None, description="UUID of the store to filter receipts by"
     )
-    sort_order: Optional[str] = Field(
+    sort_order: str | None = Field(
         default=None, description="Sort direction: 'asc' or 'desc'"
     )
 
@@ -223,16 +221,16 @@ async def loyverse_get_receipt(params: GetReceiptInput, ctx: Context) -> str:
 
 
 class ListItemsInput(_BaseListInput):
-    item_ids: Optional[str] = Field(
+    item_ids: str | None = Field(
         default=None, description="Comma-separated item UUIDs to fetch"
     )
-    store_id: Optional[str] = Field(
+    store_id: str | None = Field(
         default=None, description="UUID of the store to filter items by"
     )
-    category_id: Optional[str] = Field(
+    category_id: str | None = Field(
         default=None, description="UUID of the category to filter items by"
     )
-    show_deleted: Optional[bool] = Field(
+    show_deleted: bool | None = Field(
         default=False, description="Include soft-deleted items"
     )
 
@@ -308,10 +306,10 @@ async def loyverse_get_item(params: GetItemInput, ctx: Context) -> str:
 
 
 class ListCustomersInput(_BaseListInput):
-    customer_ids: Optional[str] = Field(
+    customer_ids: str | None = Field(
         default=None, description="Comma-separated customer UUIDs to fetch"
     )
-    email: Optional[str] = Field(
+    email: str | None = Field(
         default=None, description="Filter by exact customer email address"
     )
 
@@ -666,10 +664,10 @@ async def loyverse_get_store(params: GetStoreInput, ctx: Context) -> str:
 
 
 class ListInventoryInput(_BaseListInput):
-    store_ids: Optional[str] = Field(
+    store_ids: str | None = Field(
         default=None, description="Comma-separated store UUIDs to filter inventory by"
     )
-    variant_ids: Optional[str] = Field(
+    variant_ids: str | None = Field(
         default=None, description="Comma-separated variant UUIDs to filter inventory by"
     )
 
@@ -712,10 +710,10 @@ async def loyverse_list_inventory(params: ListInventoryInput, ctx: Context) -> s
 
 
 class ListPaymentTypesInput(_BaseListInput):
-    payment_type_ids: Optional[str] = Field(
+    payment_type_ids: str | None = Field(
         default=None, description="Comma-separated payment type IDs to fetch"
     )
-    show_deleted: Optional[bool] = Field(
+    show_deleted: bool | None = Field(
         default=False, description="Include soft-deleted payment types"
     )
 
@@ -843,15 +841,15 @@ class _AnalyticsInput(BaseModel):
         le=365,
         description="Number of past days to analyze (1–365, default 30)",
     )
-    store_id: Optional[str] = Field(
+    store_id: str | None = Field(
         default=None,
         description="Optional store UUID to filter by",
     )
-    date_start: Optional[str] = Field(
+    date_start: str | None = Field(
         default=None,
         description="Optional ISO-8601 start date, e.g. 2024-01-01",
     )
-    date_end: Optional[str] = Field(
+    date_end: str | None = Field(
         default=None,
         description="Optional ISO-8601 end date, e.g. 2024-12-31",
     )

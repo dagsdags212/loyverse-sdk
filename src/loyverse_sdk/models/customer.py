@@ -1,16 +1,18 @@
 import re
-from uuid import UUID, uuid4
 from datetime import datetime, timedelta
+from uuid import UUID, uuid4
+
 import pytz
 from pydantic import (
     BaseModel,
     Field,
-    field_validator,
     field_serializer,
+    field_validator,
     model_validator,
 )
+
 from loyverse_sdk.core.config import config
-from loyverse_sdk.models.common import Pagination, BaseListQuery
+from loyverse_sdk.models.common import BaseListQuery, Pagination
 
 
 class Customer(BaseModel):

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
-from pydantic import ValidationError
+
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 
 class Merchant(BaseModel):

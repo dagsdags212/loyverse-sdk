@@ -3,16 +3,16 @@ Product / service analytics — category mix, top items, basket composition.
 """
 
 from datetime import datetime
-from typing import Optional
+
 import duckdb
 import polars as pl
 
 from loyverse_sdk.analytics._base import (
     Format,
-    date_filter,
     _dict_to_output,
     _query,
     _scalar,
+    date_filter,
 )
 
 
@@ -22,10 +22,10 @@ class ProductAnalytics:
 
     def revenue_by_category(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Revenue breakdown by product category, with share percentages."""
@@ -65,10 +65,10 @@ class ProductAnalytics:
 
     def top_items(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         n: int = 10,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
@@ -103,10 +103,10 @@ class ProductAnalytics:
 
     def items_per_transaction(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> dict | str:
         """Average items per transaction, plus distribution percentiles."""
@@ -166,9 +166,9 @@ class ProductAnalytics:
 
     def category_mix_trend(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 90,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 90,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Monthly category revenue share over time."""

@@ -1,8 +1,10 @@
 from enum import StrEnum
 from typing import Self
 from uuid import UUID
-from pydantic import Field, model_validator, field_serializer
-from loyverse_sdk.models.common import Base, Pagination, BaseListQuery
+
+from pydantic import Field, field_serializer, model_validator
+
+from loyverse_sdk.models.common import Base, BaseListQuery, Pagination
 
 
 class DiscountType(StrEnum):

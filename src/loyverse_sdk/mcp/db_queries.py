@@ -6,7 +6,6 @@ directly instead of hitting the Loyverse API.
 """
 
 import json
-from datetime import timedelta
 from pathlib import Path
 
 import duckdb

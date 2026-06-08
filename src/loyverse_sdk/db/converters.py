@@ -8,12 +8,12 @@ This module handles:
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 
 def pydantic_to_sql_dict(
-    model_instance: Any, exclude_fields: Optional[set[str]] = None
+    model_instance: Any, exclude_fields: set[str] | None = None
 ) -> dict[str, Any]:
     """
     Convert Pydantic model instance to SQL-ready dictionary.
@@ -485,7 +485,7 @@ def convert_uuid_fields(data: dict) -> dict:
     return result
 
 
-def extract_id(value: Any) -> Optional[str]:
+def extract_id(value: Any) -> str | None:
     """
     Extract string ID from various formats (UUID, string, dict with id).
 

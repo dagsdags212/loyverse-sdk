@@ -21,7 +21,6 @@ from loyverse_sdk.endpoints.mixins import (
     CreateMixin,
     DeleteMixin,
     ListMixin,
-    RetrieveMixin,
     UpdateMixin,
 )
 from loyverse_sdk.models import (

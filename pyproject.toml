@@ -20,7 +20,6 @@ dependencies = [
   "pydantic>=2.12.4",
   "pydantic-settings>=2.12.0",
   "httpx>=0.28.1",
-  "sqlmodel>=0.0.27",
   "rich>=14.2.0",
   "pytz>=2025.2",
   "duckdb>=1.1.0",
@@ -28,16 +27,19 @@ dependencies = [
   "pyarrow>=15.0.0",
   "typer>=0.15.0",
 ]
-dependency-groups = [
+[project.optional-dependencies]
+mcp = ["mcp>=1.0.0"]
+
+[dependency-groups]
+dev = [
   "anyio>=4.11.0",
   "pytest>=9.0",
   "pytest-asyncio>=1.3.0",
   "pytest-mock>=3.15.1",
+  "pytest-cov>=6.0.0",
   "respx>=0.22.0",
+  "mcp>=1.0.0",
 ]
-
-[project.optional-dependencies]
-mcp = ["mcp>=1.0.0"]
 
 [project.scripts]
 loyverse = "loyverse_sdk.cli.main:app"
@@ -53,6 +55,22 @@ members = ["."]
 
 [tool.uv.sources]
 loyverse-sdk = { workspace = true, editable = true }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: isort, UP: pyupgrade, B: bugbear
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = [
+  "E501",  # line length handled by the formatter
+  "B008",  # typer relies on function calls (e.g. typer.Option) in defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B"]
 
 [tool.pytest.ini_options]
 minversion = "9.0"

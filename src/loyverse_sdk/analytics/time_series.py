@@ -3,14 +3,14 @@ Time-series analytics — moving averages, week-over-week growth, monthly trends
 """
 
 from datetime import datetime
-from typing import Optional
+
 import duckdb
 import polars as pl
 
 from loyverse_sdk.analytics._base import (
     Format,
-    date_filter,
     _query,
+    date_filter,
 )
 
 
@@ -21,10 +21,10 @@ class TimeSeriesAnalytics:
     def moving_average_revenue(
         self,
         window: int = 7,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 90,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 90,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Daily revenue with N-day simple moving average."""
@@ -68,9 +68,9 @@ class TimeSeriesAnalytics:
 
     def week_over_week_growth(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 90,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 90,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Daily revenue with week-over-week growth rate."""
@@ -107,7 +107,7 @@ class TimeSeriesAnalytics:
     def monthly_summary(
         self,
         months: int = 12,
-        store_id: Optional[str] = None,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Monthly revenue, transaction count, unique customers, average ticket."""
@@ -154,10 +154,10 @@ class TimeSeriesAnalytics:
 
     def day_over_day(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Daily revenue with day-over-day change."""

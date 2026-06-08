@@ -6,8 +6,8 @@ model instances into CSV or Parquet files using Polars for efficient
 serialization.
 """
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import polars as pl
 from pydantic import BaseModel

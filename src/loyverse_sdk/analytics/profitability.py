@@ -6,16 +6,16 @@ captured at time of sale to calculate true gross profit.
 """
 
 from datetime import datetime
-from typing import Optional
+
 import duckdb
 import polars as pl
 
 from loyverse_sdk.analytics._base import (
     Format,
-    date_filter,
     _query,
     _scalar,
     _scalar_to_output,
+    date_filter,
 )
 
 
@@ -25,10 +25,10 @@ class ProfitabilityAnalytics:
 
     def gross_profit(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Daily gross profit and margin percentage.
@@ -68,10 +68,10 @@ class ProfitabilityAnalytics:
 
     def profit_by_category(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Gross profit and margin broken down by product category.
@@ -113,10 +113,10 @@ class ProfitabilityAnalytics:
 
     def profit_margins(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         n: int = 20,
         sort_by: str = "gross_profit",
         fmt: Format = "dataframe",
@@ -172,10 +172,10 @@ class ProfitabilityAnalytics:
 
     def margin_trend(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 90,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 90,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> pl.DataFrame | str:
         """Daily margin percentage trend with revenue and cost context.
@@ -229,10 +229,10 @@ class ProfitabilityAnalytics:
 
     def overall_margin(
         self,
-        date_start: Optional[datetime | str] = None,
-        date_end: Optional[datetime | str] = None,
-        days: Optional[int] = 30,
-        store_id: Optional[str] = None,
+        date_start: datetime | str | None = None,
+        date_end: datetime | str | None = None,
+        days: int | None = 30,
+        store_id: str | None = None,
         fmt: Format = "dataframe",
     ) -> float | str:
         """Single-period overall gross margin percentage."""

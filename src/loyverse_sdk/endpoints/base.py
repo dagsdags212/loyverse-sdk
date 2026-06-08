@@ -1,6 +1,9 @@
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
+
 from pydantic import BaseModel
 
+if TYPE_CHECKING:
+    from loyverse_sdk.client import LoyverseClient
 
 T = TypeVar("T", bound=BaseModel)
 

@@ -1,9 +1,9 @@
 from loyverse_sdk.endpoints.base import BaseEndpoint
 from loyverse_sdk.endpoints.mixins import (
-    ListMixin,
-    RetrieveMixin,
-    PaginationMixin,
     CreateMixin,
+    ListMixin,
+    PaginationMixin,
+    RetrieveMixin,
     UpdateMixin,
 )
 from loyverse_sdk.models import Modifier, ModifierListQuery, ModifierListResponse

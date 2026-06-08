@@ -26,7 +26,7 @@ def run_async(main_coro: Callable[[LoyverseClient], Coroutine[Any, Any, None]]) 
         except (ConfigurationError, Exception) as e:
             console.print(f"[red]Configuration error: {e}[/red]")
             console.print("[dim]Run 'loyverse init' to set up your API token.[/dim]")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
         try:
             await main_coro(client)
@@ -34,10 +34,10 @@ def run_async(main_coro: Callable[[LoyverseClient], Coroutine[Any, Any, None]]) 
             raise
         except LoyverseSDKError as e:
             console.print(f"[red]{type(e).__name__}: {e}[/red]")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
         except Exception as e:
             console.print(f"[red]Unexpected error: {e}[/red]")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
         finally:
             await client.close()
 

@@ -1,11 +1,10 @@
-from typing import AsyncGenerator, Type, TypeVar, Generic
+from collections.abc import AsyncGenerator
+
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
+
 from loyverse_sdk.core.console import console
-from loyverse_sdk.exceptions import ValidationError, PaginationError
-
-
-T = TypeVar("T")
+from loyverse_sdk.exceptions import PaginationError, ValidationError
 
 
 class ListMixin:
@@ -15,7 +14,7 @@ class ListMixin:
 
     async def list(
         self,
-        model: Type[BaseModel] | None = None,
+        model: type[BaseModel] | None = None,
         **params: object,
     ) -> dict:
         data = await self._get(self.path, params=params)
@@ -28,7 +27,7 @@ class ListMixin:
                     message=str(e),
                     validation_errors=e.errors(),
                     model_name=model.__name__,
-                )
+                ) from e
 
         return data
 
@@ -38,7 +37,7 @@ class RetrieveMixin:
 
     path: str
 
-    async def retrieve(self, id: str, model: Type[BaseModel] | None = None):
+    async def retrieve(self, id: str, model: type[BaseModel] | None = None):
         data = await self._get(f"{self.path}/{id}")
         if model:
             try:
@@ -49,7 +48,7 @@ class RetrieveMixin:
                     message=str(e),
                     validation_errors=e.errors(),
                     model_name=model.__name__,
-                )
+                ) from e
 
         return data
 
@@ -60,7 +59,7 @@ class CreateMixin:
     path: str
 
     async def create(
-        self, payload: dict | Type[BaseModel], model: Type[BaseModel] | None = None
+        self, payload: dict | BaseModel, model: type[BaseModel] | None = None
     ):
         json = payload.model_dump() if isinstance(payload, BaseModel) else payload
         data = await self._post(f"{self.path}", json=json)
@@ -76,7 +75,7 @@ class UpdateMixin:
     path: str
 
     async def update(
-        self, id: str, payload: dict, model: Type[BaseModel] | None = None
+        self, id: str, payload: dict, model: type[BaseModel] | None = None
     ):
         payload["id"] = id
         data = await self._post(f"{self.path}", json=payload)
@@ -94,7 +93,7 @@ class DeleteMixin:
         return await self._delete(f"{self.path}/{id}")
 
 
-class PaginationMixin(Generic[T]):
+class PaginationMixin[T]:
     """Mixin for retrieving records across multiple pages."""
 
     path: str

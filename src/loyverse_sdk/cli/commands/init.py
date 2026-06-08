@@ -12,7 +12,6 @@ from loyverse_sdk.core.paths import (
     write_pointer,
 )
 
-
 _ENV_KEYS = ("LOYVERSE_API_TOKEN", "LOYVERSE_DB_PATH")
 
 
@@ -151,7 +150,7 @@ def init(
         "LOYVERSE_DB_PATH",
         existing.get("LOYVERSE_DB_PATH", config.LOYVERSE_DB_PATH),
     )
-    console.print(f"\n[green]✓  Configuration saved[/green]")
+    console.print("\n[green]✓  Configuration saved[/green]")
     console.print(f"[dim]  Config dir: {config_path}[/dim]")
     console.print(f"[dim]  Env file:   {env_path}[/dim]")
     console.print(f"[dim]  Database:   {_db_location(db_name, config_path)}[/dim]")

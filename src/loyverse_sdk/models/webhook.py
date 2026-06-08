@@ -1,8 +1,10 @@
 from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
+
 from pydantic import BaseModel, Field
-from loyverse_sdk.models.common import Pagination, BaseListQuery
+
+from loyverse_sdk.models.common import BaseListQuery, Pagination
 
 
 class WebhookType(StrEnum):

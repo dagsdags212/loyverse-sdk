@@ -1,30 +1,20 @@
 import json
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Mapping, Optional, Sequence
+
 import httpx
 from pydantic import BaseModel
 
 from loyverse_sdk.auth import Auth
 from loyverse_sdk.core.config import config
-from loyverse_sdk.exceptions import (
-    APIError,
-    BadRequestError,
-    AuthenticationError,
-    ForbiddenError,
-    NotFoundError,
-    RateLimitError,
-    ServerError,
-    NetworkError,
-)
-from loyverse_sdk.endpoints.base import BaseEndpoint
 from loyverse_sdk.endpoints import (
     CategoriesEndpoint,
     CustomersEndpoint,
     DiscountsEndpoint,
     EmployeesEndpoint,
-    ItemsEndpoint,
     InventoryEndpoint,
+    ItemsEndpoint,
     MerchantEndpoint,
     ModifiersEndpoint,
     PaymentTypesEndpoint,
@@ -34,8 +24,19 @@ from loyverse_sdk.endpoints import (
     StoresEndpoint,
     SuppliersEndpoint,
     TaxesEndpoint,
-    WebhooksEndpoint,
     VariantsEndpoint,
+    WebhooksEndpoint,
+)
+from loyverse_sdk.endpoints.base import BaseEndpoint
+from loyverse_sdk.exceptions import (
+    APIError,
+    AuthenticationError,
+    BadRequestError,
+    ForbiddenError,
+    NetworkError,
+    NotFoundError,
+    RateLimitError,
+    ServerError,
 )
 
 
@@ -123,15 +124,17 @@ class LoyverseClient:
         try:
             resp = await self._client.request(method, path, **kwargs)
         except httpx.TimeoutException as e:
-            raise NetworkError(f"Request to '{path}' timed out", original_error=e)
+            raise NetworkError(
+                f"Request to '{path}' timed out", original_error=e
+            ) from e
         except httpx.ConnectError as e:
             raise NetworkError(
                 f"Failed to connect to API at '{path}'", original_error=e
-            )
+            ) from e
         except httpx.HTTPError as e:
             raise NetworkError(
                 f"Network error occurred while requesting '{path}'", original_error=e
-            )
+            ) from e
 
         # Handle error responses
         if resp.status_code >= 400:
@@ -181,13 +184,13 @@ class LoyverseClient:
     async def export_to_duckdb(
         self,
         db_path: str,
-        resources: Optional[list[str]] = None,
-        created_at_min: Optional[datetime] = None,
-        created_at_max: Optional[datetime] = None,
-        updated_at_min: Optional[datetime] = None,
-        updated_at_max: Optional[datetime] = None,
+        resources: list[str] | None = None,
+        created_at_min: datetime | None = None,
+        created_at_max: datetime | None = None,
+        updated_at_min: datetime | None = None,
+        updated_at_max: datetime | None = None,
         batch_size: int = 1000,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        progress_callback: Callable[[str, int, int], None] | None = None,
         create_indexes: bool = True,
         show_progress: bool = True,
     ) -> dict[str, int]:
@@ -264,7 +267,7 @@ class LoyverseClient:
     async def sync_to_duckdb(
         self,
         db_path: str,
-        resources: Optional[list[str]] = None,
+        resources: list[str] | None = None,
         batch_size: int = 1000,
         show_progress: bool = True,
         create_indexes: bool = True,
@@ -310,11 +313,12 @@ class LoyverseClient:
         self,
         resource_name: str,
         db_path: str,
-        created_at_min: Optional[datetime] = None,
-        created_at_max: Optional[datetime] = None,
-        updated_at_min: Optional[datetime] = None,
-        updated_at_max: Optional[datetime] = None,
+        created_at_min: datetime | None = None,
+        created_at_max: datetime | None = None,
+        updated_at_min: datetime | None = None,
+        updated_at_max: datetime | None = None,
         batch_size: int = 1000,
+        show_progress: bool = True,
     ) -> int:
         """
         Export a single resource to DuckDB.

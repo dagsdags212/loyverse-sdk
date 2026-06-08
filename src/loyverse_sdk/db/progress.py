@@ -7,13 +7,11 @@ running record counts, warnings, and errors during the export process.
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 from rich.console import Console, Group
 from rich.live import Live
 from rich.table import Table
 from rich.text import Text
-
 
 SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
@@ -23,9 +21,9 @@ class ResourceStatus:
     name: str
     count: int = 0
     status: str = "pending"
-    error: Optional[str] = None
-    started_at: Optional[datetime] = None
-    finished_at: Optional[datetime] = None
+    error: str | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
     warnings: list[str] = field(default_factory=list)
 
 
@@ -52,13 +50,13 @@ class ExportProgress:
     def __init__(
         self,
         total_resources: int,
-        console: Optional[Console] = None,
+        console: Console | None = None,
         enabled: bool = True,
     ):
         self.total_resources = total_resources
         self.console = console or Console(color_system="truecolor")
         self.enabled = enabled
-        self._live: Optional[Live] = None
+        self._live: Live | None = None
         self._resources: dict[str, ResourceStatus] = {}
         self._resource_order: list[str] = []
         self._warnings: list[str] = []
@@ -181,7 +179,7 @@ class ExportProgress:
 
         if remaining > 0 and not final:
             table.add_row(
-                f"[dim]remaining[/dim]",
+                "[dim]remaining[/dim]",
                 f"[dim]{remaining} resources[/dim]",
                 style="dim",
             )

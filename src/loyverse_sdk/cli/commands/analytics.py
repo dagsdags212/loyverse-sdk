@@ -36,9 +36,9 @@ import typer
 from loyverse_sdk.analytics import AnalyticsEngine
 from loyverse_sdk.analytics._base import Format
 from loyverse_sdk.cli._async import console
+from loyverse_sdk.cli._display import build_table_from_dicts
 from loyverse_sdk.core.config import config
 from loyverse_sdk.core.paths import resolve_db_path
-
 
 # ── shared helpers ───────────────────────────────────────────────────────
 
@@ -47,13 +47,13 @@ def _open_engine(db_path: str | None = None) -> AnalyticsEngine:
     db_path = str(resolve_db_path(db_path or config.LOYVERSE_DB_PATH))
     try:
         return AnalyticsEngine(db_path)
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         console.print(
             f"\n[red]Database not found:[/red] {db_path}\n\n"
             f"[dim]Run [bold]loyverse export[/bold] "
             f"to pull data from the Loyverse API first.[/dim]\n"
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 def _handle_query_error(db_path: str, exc: Exception) -> None:
@@ -70,9 +70,6 @@ def _handle_query_error(db_path: str, exc: Exception) -> None:
     else:
         console.print(f"\n[red]Query error:[/red] {msg}\n")
     raise typer.Exit(1)
-
-
-from loyverse_sdk.cli._display import build_table_from_dicts
 
 
 def _output(result, fmt: str) -> None:
@@ -95,7 +92,6 @@ def _output(result, fmt: str) -> None:
         import json
         console.print_json(json.dumps(result, default=str))
     elif fmt == "csv":
-        import polars as pl
         if hasattr(result, "write_csv"):
             result.write_csv(None)
     else:
@@ -109,7 +105,7 @@ def _parse_date(value: str) -> datetime | None:
         return datetime.fromisoformat(value)
     except ValueError:
         console.print(f"[red]Invalid date: {value}[/red] (use YYYY-MM-DD)")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 # ── option constants ─────────────────────────────────────────────────────

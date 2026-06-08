@@ -1,8 +1,8 @@
 from loyverse_sdk.endpoints.base import BaseEndpoint
 from loyverse_sdk.endpoints.mixins import (
     ListMixin,
-    RetrieveMixin,
     PaginationMixin,
+    RetrieveMixin,
 )
 from loyverse_sdk.models import (
     PaymentType,
