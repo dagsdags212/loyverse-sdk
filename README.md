@@ -1,7 +1,5 @@
 # Loyverse SDK
 
-Hello from the new laptop!
-
 Asynchronous Python SDK, CLI, and MCP server for the
 [Loyverse API](https://developer.loyverse.com/docs/) — a point-of-sale (POS)
 platform for managing sales, inventory, and customers.
